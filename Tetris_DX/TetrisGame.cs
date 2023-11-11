@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using Tetris_DX.Blocks;
 using Tetris_DX.Components;
 
@@ -18,6 +19,11 @@ public class TetrisGame : Game
     private Vector2 _matrixOrigin;
     private Vector2 _playingAreaOrigin;
 
+    private TimeSpan _elapsed = TimeSpan.Zero;
+    // Amount of time before the piece moves down by one row
+    private TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
+    private BlockBase _currentBlock;
+
     private Texture2D BackgroundTexture { get; set; }
     // TODO(PERE): Should we use a texture with the grid instead of only
     // having the border and drawing empty cells manually? We would need
@@ -32,6 +38,9 @@ public class TetrisGame : Game
 
         _gameMatrix = new GameMatrix(22, 10);
         _tiles = new Texture2D[8];
+
+        // TODO(PERE): Spawn block randomly
+        _currentBlock = new BlockI();
     }
 
     protected override void Initialize()
@@ -78,7 +87,13 @@ public class TetrisGame : Game
             Exit();
         }
 
-        // TODO: Add your update logic here
+        _elapsed = _elapsed.Add(gameTime.ElapsedGameTime);
+        if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
+        {
+            // TODO(PERE): Temp code
+            _currentBlock.MoveDown();
+            _elapsed = _elapsed.Add(-_dropSpeed);
+        }
 
         base.Update(gameTime);
     }
@@ -95,9 +110,23 @@ public class TetrisGame : Game
                           _playingAreaOrigin,
                           Color.White);
         DrawMatrix();
+        DrawCurrentBlock();
         _spriteBatch.End();
 
         base.Draw(gameTime);
+    }
+
+    private void DrawCurrentBlock()
+    {
+        foreach (Point p in _currentBlock.TilePositions())
+        {
+            Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
+                                 (int)_matrixOrigin.Y + (p.Y * _cellSize.Y));
+            Rectangle tileBounds = new(location, _cellSize);
+            _spriteBatch.Draw(_tiles[(int)_currentBlock.Type],
+                              tileBounds,
+                              Color.White);
+        }
     }
 
     private void DrawMatrix()
