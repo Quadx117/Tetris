@@ -8,6 +8,8 @@ public class TetrisGame : Game
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
+    public Texture2D BackgroundTexture { get; private set; }
+
     public TetrisGame()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -17,7 +19,11 @@ public class TetrisGame : Game
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
+
+        _graphics.PreferredBackBufferHeight = 600;
+        _graphics.PreferredBackBufferWidth = 800;
+
+        _graphics.ApplyChanges();
 
         base.Initialize();
     }
@@ -26,13 +32,16 @@ public class TetrisGame : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-        // TODO: use this.Content to load your game content here
+        BackgroundTexture = Content.Load<Texture2D>(@"Images\Background");
     }
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
+            Keyboard.GetState().IsKeyDown(Keys.Escape))
+        {
             Exit();
+        }
 
         // TODO: Add your update logic here
 
@@ -41,9 +50,13 @@ public class TetrisGame : Game
 
     protected override void Draw(GameTime gameTime)
     {
-        GraphicsDevice.Clear(Color.CornflowerBlue);
+        GraphicsDevice.Clear(Color.Black);
 
-        // TODO: Add your drawing code here
+        _spriteBatch.Begin();
+        _spriteBatch.Draw(BackgroundTexture,
+                          _graphics.GraphicsDevice.Viewport.Bounds,
+                          Color.White);
+        _spriteBatch.End();
 
         base.Draw(gameTime);
     }
