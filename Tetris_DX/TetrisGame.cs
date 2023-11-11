@@ -24,6 +24,10 @@ public class TetrisGame : Game
     private TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
     private BlockBase _currentBlock;
 
+    // TODO(PERE): Create a PlayerController class and handle keyboard,
+    // gamepad and maybe mouse controls
+    private KeyboardState oldKeyboardState = Keyboard.GetState();
+
     private Texture2D BackgroundTexture { get; set; }
     // TODO(PERE): Should we use a texture with the grid instead of only
     // having the border and drawing empty cells manually? We would need
@@ -86,6 +90,27 @@ public class TetrisGame : Game
         {
             Exit();
         }
+
+        KeyboardState newKeyboardState = Keyboard.GetState();
+        if (oldKeyboardState.IsKeyUp(Keys.Left) && newKeyboardState.IsKeyDown(Keys.Left))
+        {
+            _currentBlock.MoveLeft();
+        }
+        else if (oldKeyboardState.IsKeyUp(Keys.Right) && newKeyboardState.IsKeyDown(Keys.Right))
+        {
+            _currentBlock.MoveRight();
+        }
+
+        if (oldKeyboardState.IsKeyUp(Keys.Up) && newKeyboardState.IsKeyDown(Keys.Up))
+        {
+            _currentBlock.RotateCW();
+        }
+        else if (oldKeyboardState.IsKeyUp(Keys.Z) && newKeyboardState.IsKeyDown(Keys.Z))
+        {
+            _currentBlock.RotateCCW();
+        }
+
+        oldKeyboardState = newKeyboardState;
 
         _elapsed = _elapsed.Add(gameTime.ElapsedGameTime);
         if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
