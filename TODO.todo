@@ -1,0 +1,32 @@
+=== Tetris ===
+
+== Features == {
+[ ] Base game
+    [ ] Playfield (Matrix)
+    [ ] Falling Tetrominos
+    [ ] Basic spawning of Tetrominos
+    [ ] Basic RNG for next Tetrominos
+    [ ] Basic rotation
+    [ ] Basic lock down (time before Tetromino is locked and cannot be moved/rotated)
+    [ ] Clearing lines
+[ ] Proper spawning of Tetrominos
+    [ ] Spawn at top of the matrix
+    [ ] Spawn higher when top is occupied
+[ ] Proper 7-bag random generator
+[ ] Proper rotaion system with wall/floor kicks
+[ ] Hold a Tetromino to be used later
+[ ] Tetrominos preview (show the next 6 Tetrominos)
+[ ] Score system
+    [ ] Show score
+    [ ] Show number of lines
+    [ ] Show current level
+[ ] Add visual effect when clearing lines
+[ ] Title screen
+[ ] Option menu
+    [ ] Enable/Disable the grid
+    [ ] Enable/Disable the ghost Tetromino at the bottom of the screen
+    [ ] Set Tetrominos preview from 1 to 6
+[ ] Game Over screen
+    [ ] Show stats (number of single lines, number of Tetris, t-spins, etc.)
+    [ ] Top scores
+}
