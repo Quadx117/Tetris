@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using Tetris_DX.Blocks;
 using Tetris_DX.Components;
+using Tetris_DX.GameState;
 
 public class TetrisGame : Game
 {
@@ -37,6 +38,7 @@ public class TetrisGame : Game
     private TimeSpan _lockDownDelay = TimeSpan.FromSeconds(0.5);
     private bool _lockingDown = false;
     private BlockBase _currentBlock;
+    private BlockQueue _blockQueue = new();
 
     // TODO(PERE): Create a PlayerController class and handle keyboard,
     // gamepad and maybe mouse controls
@@ -58,7 +60,7 @@ public class TetrisGame : Game
         _tiles = new Texture2D[8];
 
         // TODO(PERE): Spawn block randomly
-        _currentBlock = new BlockI();
+        _currentBlock = _blockQueue.Dequeue();
     }
 
     protected override void Initialize()
@@ -246,8 +248,7 @@ public class TetrisGame : Game
 
         // TODO(PERE): Clear full rows and increment score
 
-        // TODO(PERE): Get random block
-        _currentBlock = new BlockT();
+        _currentBlock = _blockQueue.Dequeue();
         // TODO(PERE): Enable canHold
         // TODO(PERE): Validate game over conditions
     }

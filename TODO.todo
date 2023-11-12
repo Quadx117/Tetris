@@ -5,17 +5,22 @@
     [x] Playfield (Matrix)
     [x] Falling Tetrominos
     [x] Basic spawning of Tetrominos
-    [ ] Basic RNG for next Tetrominos
+    [x] Basic randomizer for next Tetrominos
     [x] Basic rotation and move left/right
-    [ ] Basic lock down (time before Tetromino is locked and cannot be moved/rotated)
+    [x] Basic lock down (time before Tetromino is locked and cannot be moved/rotated)
     [ ] Clearing lines
 [ ] Proper spawning of Tetrominos
     [ ] Spawn at top of the matrix (inside hidden rows)
     [ ] Immediately go down if not blocked
-[ ] Proper 7-bag random generator
+[ ] Proper 35-bag randomizer with 6 rolls
+[ ] Proper 7-bag randomizer?
+[ ] Add a randomizer with a 4 piece history (with configuration in options)?
+    [ ] Try 4 or 6 times before returning the piece even if it is the same as the last
+[ ] Prevent the first piece from being a Z, S or O?
 [ ] Proper rotation system with wall/floor kicks
 [ ] Hold a Tetromino to be used later
 [ ] Tetrominos preview (show the next 6 Tetrominos)
+[ ] Proper lock down with max number of moves before locking in place
 [ ] Score system
     [ ] Show score
     [ ] Show number of lines
@@ -35,4 +40,8 @@
 [ ] Handle toggling full screen
 [ ] Add music and sound effects
 [ ] Allow key repeat to move Tetromino lef or right while holding down the appropriate key
+}
+
+== Links == {
+- History of Tetris randomizer: https://simon.lc/the-history-of-tetris-randomizers
 }
