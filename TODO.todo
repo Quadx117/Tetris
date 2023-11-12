@@ -1,48 +1,65 @@
-=== Tetris ===
+=== Basic Features === {
+== Base game == {
+[x] Playfield (Matrix)
+[x] Falling Tetrominos
+[x] Basic spawning of Tetrominos
+[x] Basic randomizer for next Tetrominos
+[x] Basic rotation and move left/right
+[x] Basic lock down (time before Tetromino is locked and cannot be moved/rotated)
+[ ] Clearing lines
+    [ ] Add delay before the next piece after clearing lines
+[ ] Allow key repeat to move Tetromino left or right while holding down the appropriate key
+}
+}
 
-== Features == {
-[ ] Base game
-    [x] Playfield (Matrix)
-    [x] Falling Tetrominos
-    [x] Basic spawning of Tetrominos
-    [x] Basic randomizer for next Tetrominos
-    [x] Basic rotation and move left/right
-    [x] Basic lock down (time before Tetromino is locked and cannot be moved/rotated)
-    [ ] Clearing lines
-        [ ] Add delay before the next piece after clearing lines
+=== Advanced Features === {
 [ ] Proper spawning of Tetrominos
-    [ ] Spawn at top of the matrix (inside hidden rows)
+    [x] Spawn at top of the matrix (inside hidden rows)
     [ ] Immediately go down if not blocked
+    [ ] If piece is blocked inside invisible rows, then game over
+
+== Randomizer == {
 [ ] Proper 35-bag randomizer with 6 rolls
 [ ] Proper 7-bag randomizer?
 [ ] Add a randomizer with a 4 piece history (with configuration in options)?
     [ ] Try 4 or 6 times before returning the piece even if it is the same as the last
 [ ] Prevent the first piece from being a Z, S or O?
-[ ] Proper rotation system with wall/floor kicks
-[ ] Hold a Tetromino to be used later
-[ ] Tetrominos preview (show the next 6 Tetrominos)
-[ ] Proper lock down with max number of moves before locking in place
-[ ] Score system
-    [ ] Show score
-    [ ] Show number of lines
-    [ ] Show current level
-[ ] Add visual effect when clearing lines
+}
+
+== UI == {
+[ ] Count down from 3 when starting game or resume from pause
+[ ] Handle resizing the screen
+[ ] Handle toggling full screen
 [ ] Title screen
-[ ] Option menu
+[ ] Pause screen
+[ ] Game Over screen
+    [ ] Show stats (number of single lines, number of Tetris, t-spins, etc.)
+    [ ] Top scores
+[ ] Options screen
     [ ] Enable/Disable the grid
     [ ] Enable/Disable the ghost Tetromino at the bottom of the screen
     [ ] Set Tetrominos preview from 1 to 6
     [ ] Theme selector
     [ ] Full screen VS windowed mode
-[ ] Game Over screen
-    [ ] Show stats (number of single lines, number of Tetris, t-spins, etc.)
-    [ ] Top scores
-[ ] Handle resizing the screen
-[ ] Handle toggling full screen
-[ ] Add music and sound effects
-[ ] Allow key repeat to move Tetromino lef or right while holding down the appropriate key
+[ ] Score system
+    [ ] Show score
+    [ ] Show number of lines
+    [ ] Show current level
 }
 
-== Links == {
+== Controls/Functionnalities == {
+[ ] Proper rotation system with wall/floor kicks
+[ ] Hold a Tetromino to be used later
+[ ] Tetrominos preview (show the next 6 Tetrominos)
+[ ] Proper lock down with max number of moves before locking in place
+}
+
+== Polish == {
+[ ] Add visual effect when clearing lines
+[ ] Add music and sound effects
+}
+}
+
+=== Links === {
 - History of Tetris randomizer: https://simon.lc/the-history-of-tetris-randomizers
 }
