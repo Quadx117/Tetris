@@ -256,7 +256,9 @@ public class TetrisGame : Game
             _gameMatrix[p.Y, p.X] = _currentBlock.Type;
         }
 
-        // TODO(PERE): Clear full rows and increment score
+        // TODO(PERE): Better clearing with visual feedback
+        // TODO(PERE): Increment score
+        _gameMatrix.ClearFullRows();
 
         _currentBlock = _blockQueue.Dequeue();
         // TODO(PERE): Enable canHold

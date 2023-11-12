@@ -34,4 +34,52 @@ internal class GameMatrix
         return IsInsideMatrix(p) &&
                _grid[p.Y, p.X] == BlockType.None;
     }
+
+    public bool IsRowFull(int rowIndex)
+    {
+        for (int columnIndex = 0; columnIndex < ColumnCount; columnIndex++)
+        {
+            if (_grid[rowIndex, columnIndex] == BlockType.None)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void ClearFullRows()
+    {
+        int cleared = 0;
+
+        for (int rowIndex = RowCount - 1; rowIndex >= 0; rowIndex--)
+        {
+            if (IsRowFull(rowIndex))
+            {
+                ClearRow(rowIndex);
+                cleared++;
+            }
+            else if (cleared > 0)
+            {
+                MoveRowDown(rowIndex, cleared);
+            }
+        }
+    }
+
+    private void ClearRow(int rowIndex)
+    {
+        for (int columnIndex = 0; columnIndex < ColumnCount; columnIndex++)
+        {
+            _grid[rowIndex, columnIndex] = BlockType.None;
+        }
+    }
+
+    private void MoveRowDown(int rowIndex, int numRows)
+    {
+        for (int columnIndex = 0; columnIndex < ColumnCount; columnIndex++)
+        {
+            _grid[rowIndex + numRows, columnIndex] = _grid[rowIndex, columnIndex];
+            _grid[rowIndex, columnIndex] = BlockType.None;
+        }
+    }
 }
