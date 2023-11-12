@@ -16,7 +16,14 @@ public class TetrisGame : Game
     // TODO(PERE): See how to calculate the cell size based on the window size,
     // espacially if we want to resize the screen.
     private readonly Point _cellSize = new(25);
+    /// <summary>
+    /// This is the absolute top lef corner of the game matrix
+    /// </summary>
     private Vector2 _matrixOrigin;
+    /// <summary>
+    /// This is the top left corner of the visible part of the game matrix
+    /// </summary>
+    private Vector2 _matrixVisibleOrigin;
     private Vector2 _playingAreaOrigin;
 
     private TimeSpan _elapsed = TimeSpan.Zero;
@@ -59,9 +66,10 @@ public class TetrisGame : Game
         // NOTE(PERE): We exclude the two first rows since they are meant to be
         // invisible to the player.
         int playingAreaHeight = (_gameMatrix.RowCount - 2) * _cellSize.Y;
-        _matrixOrigin = new Vector2((_graphics.PreferredBackBufferWidth - playingAreaWidth) / 2,
+        _matrixVisibleOrigin = new Vector2((_graphics.PreferredBackBufferWidth - playingAreaWidth) / 2,
                                     (_graphics.PreferredBackBufferHeight - playingAreaHeight) / 2);
-        _playingAreaOrigin = _matrixOrigin - Vector2.One;
+        _matrixOrigin = _matrixVisibleOrigin - new Vector2(0, 2 * _cellSize.Y);
+        _playingAreaOrigin = _matrixVisibleOrigin - Vector2.One;
 
         base.Initialize();
     }
@@ -95,19 +103,35 @@ public class TetrisGame : Game
         if (oldKeyboardState.IsKeyUp(Keys.Left) && newKeyboardState.IsKeyDown(Keys.Left))
         {
             _currentBlock.MoveLeft();
+            if (!BlockFits())
+            {
+                _currentBlock.MoveRight();
+            }
         }
         else if (oldKeyboardState.IsKeyUp(Keys.Right) && newKeyboardState.IsKeyDown(Keys.Right))
         {
             _currentBlock.MoveRight();
+            if (!BlockFits())
+            {
+                _currentBlock.MoveLeft();
+            }
         }
 
         if (oldKeyboardState.IsKeyUp(Keys.Up) && newKeyboardState.IsKeyDown(Keys.Up))
         {
             _currentBlock.RotateCW();
+            if (!BlockFits())
+            {
+                _currentBlock.RotateCCW();
+            }
         }
         else if (oldKeyboardState.IsKeyUp(Keys.Z) && newKeyboardState.IsKeyDown(Keys.Z))
         {
             _currentBlock.RotateCCW();
+            if (!BlockFits())
+            {
+                _currentBlock.RotateCW();
+            }
         }
 
         oldKeyboardState = newKeyboardState;
@@ -117,6 +141,10 @@ public class TetrisGame : Game
         {
             // TODO(PERE): Temp code
             _currentBlock.MoveDown();
+            if (!BlockFits())
+            {
+                _currentBlock.MoveUp();
+            }
             _elapsed = _elapsed.Add(-_dropSpeed);
         }
 
@@ -145,12 +173,16 @@ public class TetrisGame : Game
     {
         foreach (Point p in _currentBlock.TilePositions())
         {
-            Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
-                                 (int)_matrixOrigin.Y + (p.Y * _cellSize.Y));
-            Rectangle tileBounds = new(location, _cellSize);
-            _spriteBatch.Draw(_tiles[(int)_currentBlock.Type],
-                              tileBounds,
-                              Color.White);
+            // NOTE(PERE): We skip the first two rows which are meant to be invisible to the player.
+            if (p.Y > 1)
+            {
+                Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
+                                     (int)_matrixOrigin.Y + (p.Y * _cellSize.Y));
+                Rectangle tileBounds = new(location, _cellSize);
+                _spriteBatch.Draw(_tiles[(int)_currentBlock.Type],
+                                  tileBounds,
+                                  Color.White);
+            }
         }
     }
 
@@ -161,8 +193,8 @@ public class TetrisGame : Game
         {
             for (int colIndex = 0; colIndex < _gameMatrix.ColumnCount; colIndex++)
             {
-                Point location = new((int)_matrixOrigin.X + (colIndex * _cellSize.X),
-                                     (int)_matrixOrigin.Y + ((rowIndex - 2) * _cellSize.Y));
+                Point location = new((int)_matrixVisibleOrigin.X + (colIndex * _cellSize.X),
+                                     (int)_matrixVisibleOrigin.Y + ((rowIndex - 2) * _cellSize.Y));
                 Rectangle tileBounds = new(location, _cellSize);
                 BlockType blockType = _gameMatrix[rowIndex, colIndex];
                 _spriteBatch.Draw(_tiles[(int)blockType],
@@ -170,5 +202,18 @@ public class TetrisGame : Game
                                   Color.White);
             }
         }
+    }
+
+    private bool BlockFits()
+    {
+        foreach (Point p in _currentBlock.TilePositions())
+        {
+            if (!_gameMatrix.IsEmpty(p))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

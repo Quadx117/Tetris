@@ -17,6 +17,11 @@ internal abstract class BlockBase
         _offset = new Point(StartOffset.Y, StartOffset.X);
     }
 
+    public void MoveUp()
+    {
+        Move(0, -1);
+    }
+
     public void MoveDown()
     {
         Move(0, 1);
