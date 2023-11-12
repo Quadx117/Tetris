@@ -27,8 +27,15 @@ public class TetrisGame : Game
     private Vector2 _playingAreaOrigin;
 
     private TimeSpan _elapsed = TimeSpan.Zero;
-    // Amount of time before the piece moves down by one row
+    /// <summary>
+    /// Amount of time before the piece moves down by one row
+    /// </summary>
     private TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
+    /// <summary>
+    /// Amount of time before the piece is locked in place.
+    /// </summary>
+    private TimeSpan _lockDownDelay = TimeSpan.FromSeconds(0.5);
+    private bool _lockingDown = false;
     private BlockBase _currentBlock;
 
     // TODO(PERE): Create a PlayerController class and handle keyboard,
@@ -137,15 +144,28 @@ public class TetrisGame : Game
         oldKeyboardState = newKeyboardState;
 
         _elapsed = _elapsed.Add(gameTime.ElapsedGameTime);
-        if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
+        if (_lockingDown)
         {
-            // TODO(PERE): Temp code
+            if (_lockDownDelay.TotalMilliseconds <= 0)
+            {
+                _lockDownDelay = TimeSpan.FromSeconds(0.5);
+                _lockingDown = false;
+                LockDownBlock();
+            }
+            else
+            {
+                _lockDownDelay = _lockDownDelay.Subtract(gameTime.ElapsedGameTime);
+            }
+        }
+        else if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
+        {
             _currentBlock.MoveDown();
             if (!BlockFits())
             {
                 _currentBlock.MoveUp();
+                _lockingDown = true;
             }
-            _elapsed = _elapsed.Add(-_dropSpeed);
+            _elapsed = _elapsed.Subtract(_dropSpeed);
         }
 
         base.Update(gameTime);
@@ -215,5 +235,20 @@ public class TetrisGame : Game
         }
 
         return true;
+    }
+
+    private void LockDownBlock()
+    {
+        foreach (Point p in _currentBlock.TilePositions())
+        {
+            _gameMatrix[p.Y, p.X] = _currentBlock.Type;
+        }
+
+        // TODO(PERE): Clear full rows and increment score
+
+        // TODO(PERE): Get random block
+        _currentBlock = new BlockT();
+        // TODO(PERE): Enable canHold
+        // TODO(PERE): Validate game over conditions
     }
 }
