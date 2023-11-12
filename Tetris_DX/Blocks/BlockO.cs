@@ -6,7 +6,7 @@ internal class BlockO : BlockBase
 {
     public override BlockType Type => BlockType.O;
 
-    protected override Point StartOffset => new(0, 4);
+    protected override Point StartOffset => new(4, 0);
 
     protected override Point[][] Tiles => new Point[][]
     {

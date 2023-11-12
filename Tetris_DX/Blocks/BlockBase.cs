@@ -57,8 +57,7 @@ internal abstract class BlockBase
     public void Reset()
     {
         _rotationState = 0;
-        _offset.Y = StartOffset.Y;
-        _offset.X = StartOffset.X;
+        _offset = StartOffset;
     }
 
     public IEnumerable<Point> TilePositions()
