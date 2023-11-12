@@ -40,6 +40,9 @@ internal class BlockQueue
     public BlockBase Dequeue()
     {
         BlockBase result = _queue.Dequeue();
+        // NOTE(PERE): We need to reset the block to its original state since we
+        // use the same instance of a block again and again.
+        result.Reset();
         _queue.Enqueue(NextRandomBlock());
         return result;
     }

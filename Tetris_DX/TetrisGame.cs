@@ -31,18 +31,19 @@ public class TetrisGame : Game
     /// <summary>
     /// Amount of time before the piece moves down by one row
     /// </summary>
-    private TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
+    private readonly TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
     /// <summary>
     /// Amount of time before the piece is locked in place.
     /// </summary>
     private TimeSpan _lockDownDelay = TimeSpan.FromSeconds(0.5);
     private bool _lockingDown = false;
     private BlockBase _currentBlock;
-    private BlockQueue _blockQueue = new();
+    private readonly BlockQueue _blockQueue = new();
 
     // TODO(PERE): Create a PlayerController class and handle keyboard,
     // gamepad and maybe mouse controls
     private KeyboardState oldKeyboardState = Keyboard.GetState();
+    private int _softDropMultiplier = 1;
 
     private Texture2D BackgroundTexture { get; set; }
     // TODO(PERE): Should we use a texture with the grid instead of only
@@ -143,9 +144,18 @@ public class TetrisGame : Game
             }
         }
 
+        if (oldKeyboardState.IsKeyUp(Keys.Down) && newKeyboardState.IsKeyDown(Keys.Down))
+        {
+            _softDropMultiplier = 20;
+        }
+        else if (oldKeyboardState.IsKeyDown(Keys.Down) && newKeyboardState.IsKeyUp(Keys.Down))
+        {
+            _softDropMultiplier = 1;
+        }
+
         oldKeyboardState = newKeyboardState;
 
-        _elapsed = _elapsed.Add(gameTime.ElapsedGameTime);
+        _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));
         if (_lockingDown)
         {
             if (_lockDownDelay.TotalMilliseconds <= 0)

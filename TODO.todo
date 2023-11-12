@@ -9,6 +9,7 @@
     [x] Basic rotation and move left/right
     [x] Basic lock down (time before Tetromino is locked and cannot be moved/rotated)
     [ ] Clearing lines
+        [ ] Add delay before the next piece after clearing lines
 [ ] Proper spawning of Tetrominos
     [ ] Spawn at top of the matrix (inside hidden rows)
     [ ] Immediately go down if not blocked
