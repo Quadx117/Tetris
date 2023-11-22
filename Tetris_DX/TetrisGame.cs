@@ -1,8 +1,8 @@
 ﻿namespace Tetris_DX;
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 using Tetris_DX.Blocks;
 using Tetris_DX.Components;
 using Tetris_DX.GameState;
@@ -43,7 +43,12 @@ public class TetrisGame : Game
     // TODO(PERE): Create a PlayerController class and handle keyboard,
     // gamepad and maybe mouse controls
     private KeyboardState oldKeyboardState = Keyboard.GetState();
+    private KeyboardState newKeyboardState;
     private int _softDropMultiplier = 1;
+    private readonly TimeSpan _autoRepeatDelay = TimeSpan.FromMilliseconds(250);
+    private readonly TimeSpan _autoRepeatRate = TimeSpan.FromMilliseconds(50);
+    private TimeSpan _elapsedSinceLastAutoRepeat = TimeSpan.FromMilliseconds(50);
+    private MovementDirection _movementDirection = MovementDirection.None;
 
     private Texture2D BackgroundTexture { get; set; }
     // TODO(PERE): Should we use a texture with the grid instead of only
@@ -109,25 +114,78 @@ public class TetrisGame : Game
             Exit();
         }
 
-        KeyboardState newKeyboardState = Keyboard.GetState();
-        if (oldKeyboardState.IsKeyUp(Keys.Left) && newKeyboardState.IsKeyDown(Keys.Left))
+        newKeyboardState = Keyboard.GetState();
+        if (KeyDown(Keys.Left))
         {
-            _currentBlock.MoveLeft();
-            if (!BlockFits())
-            {
-                _currentBlock.MoveRight();
-            }
+            _movementDirection = MovementDirection.Left;
+            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
         }
-        else if (oldKeyboardState.IsKeyUp(Keys.Right) && newKeyboardState.IsKeyDown(Keys.Right))
+        else if (KeyDown(Keys.Right))
         {
-            _currentBlock.MoveRight();
-            if (!BlockFits())
+            _movementDirection = MovementDirection.Right;
+            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+        }
+
+        if (_movementDirection == MovementDirection.Left &&
+            KeyUp(Keys.Left) &&
+            KeyPressed(Keys.Right))
+        {
+            _movementDirection = MovementDirection.Right;
+            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+        }
+        else if (_movementDirection == MovementDirection.Right &&
+                 KeyUp(Keys.Right) &&
+                 KeyPressed(Keys.Left))
+        {
+            _movementDirection = MovementDirection.Left;
+            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+        }
+
+        if (_movementDirection == MovementDirection.Left &&
+            KeyPressed(Keys.Left))
+        {
+            _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
+        }
+        else if (_movementDirection == MovementDirection.Right &&
+                 KeyPressed(Keys.Right))
+        {
+            _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
+        }
+
+        // NOTE(PERE): If we pressed left or right, then _elapsedSinceLastAutoRepeat
+        // will be 0 so we know we want to move the Tetromino in that case. Otherwise,
+        // we wait for the appropirate amount of time before auto-repeating the move.
+        if (_elapsedSinceLastAutoRepeat == TimeSpan.Zero ||
+            _elapsedSinceLastAutoRepeat > _autoRepeatDelay)
+        {
+            if (_elapsedSinceLastAutoRepeat > _autoRepeatDelay)
             {
-                _currentBlock.MoveLeft();
+                _elapsedSinceLastAutoRepeat -= _autoRepeatRate;
+            }
+
+            switch (_movementDirection)
+            {
+                case MovementDirection.None:
+                    // Nothing to do.
+                    break;
+                case MovementDirection.Left:
+                    _currentBlock.MoveLeft();
+                    if (!BlockFits())
+                    {
+                        _currentBlock.MoveRight();
+                    }
+                    break;
+                case MovementDirection.Right:
+                    _currentBlock.MoveRight();
+                    if (!BlockFits())
+                    {
+                        _currentBlock.MoveLeft();
+                    }
+                    break;
             }
         }
 
-        if (oldKeyboardState.IsKeyUp(Keys.Up) && newKeyboardState.IsKeyDown(Keys.Up))
+        if (KeyDown(Keys.Up))
         {
             _currentBlock.RotateCW();
             if (!BlockFits())
@@ -135,7 +193,7 @@ public class TetrisGame : Game
                 _currentBlock.RotateCCW();
             }
         }
-        else if (oldKeyboardState.IsKeyUp(Keys.Z) && newKeyboardState.IsKeyDown(Keys.Z))
+        else if (KeyDown(Keys.Z))
         {
             _currentBlock.RotateCCW();
             if (!BlockFits())
@@ -144,11 +202,11 @@ public class TetrisGame : Game
             }
         }
 
-        if (oldKeyboardState.IsKeyUp(Keys.Down) && newKeyboardState.IsKeyDown(Keys.Down))
+        if (KeyDown(Keys.Down))
         {
             _softDropMultiplier = 20;
         }
-        else if (oldKeyboardState.IsKeyDown(Keys.Down) && newKeyboardState.IsKeyUp(Keys.Down))
+        else if (KeyUp(Keys.Down))
         {
             _softDropMultiplier = 1;
         }
@@ -263,5 +321,47 @@ public class TetrisGame : Game
         _currentBlock = _blockQueue.Dequeue();
         // TODO(PERE): Enable canHold
         // TODO(PERE): Validate game over conditions
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the key is being pressed, <c>false</c> otherwise.
+    /// </summary>
+    /// <remarks>
+    /// A key is considered being pressed only if its previous state was also pressed.
+    /// Use <see cref="KeyDown(KeyboardState, Keys)"/> to know if the key transitioned
+    /// from up to down.
+    /// </remarks>
+    /// <param name="newKeyboardState">The current state of the keyboard.</param>
+    /// <param name="key">The key to evaluate.</param>
+    /// <returns><c>true</c> if the key is being pressed, <c>false</c> otherwise.</returns>
+    private bool KeyPressed(Keys key)
+    {
+        bool result = oldKeyboardState.IsKeyDown(key) && newKeyboardState.IsKeyDown(key);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the key transitioned from up to down, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="key">The key to evaluate.</param>
+    /// <returns><c>true</c> if the key transitioned from up to down, <c>false</c> otherwise.</returns>
+    private bool KeyDown(Keys key)
+    {
+        bool result = oldKeyboardState.IsKeyUp(key) && newKeyboardState.IsKeyDown(key);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the key transitioned from down to up, <c>false</c> otherwise.
+    /// </summary>
+    /// <param name="key">The key to evaluate.</param>
+    /// <returns><c>true</c> if the key transitioned from down to up, <c>false</c> otherwise.</returns>
+    private bool KeyUp(Keys key)
+    {
+        bool result = oldKeyboardState.IsKeyDown(key) && newKeyboardState.IsKeyUp(key);
+
+        return result;
     }
 }

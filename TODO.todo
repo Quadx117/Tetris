@@ -11,7 +11,7 @@
 }
 
 === Advanced Features === {
-[ ] Allow key repeat to move Tetromino left or right while holding down the appropriate key
+[x] Allow key repeat to move Tetromino left or right while holding down the appropriate key
 [ ] Add animation for cleared lines
 [ ] Add animation for lines moving down
 [ ] Proper spawning of Tetrominos
@@ -53,6 +53,9 @@
 [ ] Hold a Tetromino to be used later
 [ ] Tetrominos preview (show the next 6 Tetrominos)
 [ ] Proper lock down with max number of moves before locking in place
+    [ ] Make sure to not lock the piece in mid-air if we triggered the lockdown 
+        timer and we then moved the piece to a position where it can continue to
+        move down.
 }
 
 == Polish == {
