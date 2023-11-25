@@ -211,6 +211,17 @@ public class TetrisGame : Game
             _softDropMultiplier = 1;
         }
 
+        if (KeyDown(Keys.Space))
+        {
+            do
+            {
+                _currentBlock.MoveDown();
+            } while (BlockFits());
+
+            _currentBlock.MoveUp();
+            LockDownBlock();
+        }
+
         oldKeyboardState = newKeyboardState;
 
         _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));

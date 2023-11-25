@@ -49,6 +49,8 @@
 }
 
 == Controls/Functionnalities == {
+[x] Hard drop
+[x] Soft drop
 [ ] Proper rotation system with wall/floor kicks
 [ ] Hold a Tetromino to be used later
 [ ] Tetrominos preview (show the next 6 Tetrominos)
