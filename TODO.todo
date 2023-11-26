@@ -34,7 +34,10 @@
 [ ] Title screen
 [ ] Pause screen
 [ ] Game Over screen
-    [ ] Show stats (number of single lines, number of Tetris, t-spins, etc.)
+    [ ] Show stats
+        [ ] Number of single lines, number of Tetris, t-spins, etc.
+        [ ] Number of each pieces used
+    [ ] Show info (score, number of lines and current level)
     [ ] Top scores
 [ ] Options screen
     [ ] Enable/Disable the grid
@@ -42,18 +45,20 @@
     [ ] Set Tetrominos preview from 1 to 6
     [ ] Theme selector
     [ ] Full screen VS windowed mode
-[ ] Score system
-    [ ] Show score
-    [ ] Show number of lines
-    [ ] Show current level
+[ ] Game Screen
+    [*] Show score
+    [*] Show number of lines
+    [*] Show current level
 }
 
 == Controls/Functionnalities == {
 [x] Hard drop
 [x] Soft drop
+[ ] Score system based on current level and number of cleared lines
 [ ] Proper rotation system with wall/floor kicks
 [ ] Hold a Tetromino to be used later
-[ ] Tetrominos preview (show the next 6 Tetrominos)
+[ ] Tetrominos preview (show the next Tetromino)
+    [ ] Handle showing up to 6 Tetrominos based on config
 [ ] Proper lock down with max number of moves before locking in place
     [ ] Make sure to not lock the piece in mid-air if we triggered the lockdown 
         timer and we then moved the piece to a position where it can continue to
@@ -64,6 +69,18 @@
 [ ] Add visual effect when clearing lines
 [ ] Add music and sound effects
 }
+}
+
+=== Engine Architecture === {
+== Fonts == {
+[ ] Choose how to organize fonts file and naming scheme
+    - Organize by screen (menu, game, etc.) and name files according to their used
+      (title, normal, etc)
+    - Single Fonts folder and name files similar to css (h1, h2, normal, etc.)
+    - Single Fonts folder and name files according to their attributes (font name, size, etc.)
+}
+
+[ ] Persistent configuration
 }
 
 === Links === {

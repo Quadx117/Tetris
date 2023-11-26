@@ -12,6 +12,12 @@ public class TetrisGame : Game
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
+    /// <summary>
+    /// Used to draw basic shapes with any color, such as the background
+    /// rectangle under the score and other info.
+    /// </summary>
+    private Texture2D pixel;
+
     private readonly GameMatrix _gameMatrix;
     private readonly Texture2D[] _tiles;
     // TODO(PERE): See how to calculate the cell size based on the window size,
@@ -26,6 +32,8 @@ public class TetrisGame : Game
     /// </summary>
     private Vector2 _matrixVisibleOrigin;
     private Vector2 _playingAreaOrigin;
+
+    private Rectangle _infoPanelDest;
 
     private TimeSpan _elapsed = TimeSpan.Zero;
     /// <summary>
@@ -55,6 +63,14 @@ public class TetrisGame : Game
     // having the border and drawing empty cells manually? We would need
     // two textures if we wanted to support not showing the grid.
     private Texture2D PlayingAreaTexture { get; set; }
+
+    private int _score;
+    private int _lines;
+    private int _level = 1;
+
+    // Font resources
+    private SpriteFont _fontNormal;
+    private SpriteFont _fontTitle;
 
     public TetrisGame()
     {
@@ -93,6 +109,9 @@ public class TetrisGame : Game
     {
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
+        pixel = new Texture2D(GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
+        pixel.SetData(new[] { Color.White }); // So we can draw whatever color we want
+
         BackgroundTexture = Content.Load<Texture2D>(@"Images\Background");
         PlayingAreaTexture = Content.Load<Texture2D>(@"Images\PlayingArea");
 
@@ -104,6 +123,20 @@ public class TetrisGame : Game
         _tiles[5] = Content.Load<Texture2D>(@"Images\TileGreen");
         _tiles[6] = Content.Load<Texture2D>(@"Images\TilePurple");
         _tiles[7] = Content.Load<Texture2D>(@"Images\TileRed");
+
+        _fontNormal = Content.Load<SpriteFont>("Fonts/Game/normal");
+        _fontTitle = Content.Load<SpriteFont>("Fonts/Game/title");
+
+        // TODO(PERE): This doesn't feel like the best place for it, but textures
+        // aren't yet loaded in the Initialize method.
+        // NOTE(PERE): We use a margin of 10 pixels between the infoPanel and
+        // the playingField and a panelSize of 174x174.
+        Vector2 infoPanelSize = new(173);
+        _infoPanelDest =
+            new Rectangle((int)(_playingAreaOrigin.X - infoPanelSize.X - 10),
+                          (int)(_playingAreaOrigin.Y + PlayingAreaTexture.Height - infoPanelSize.Y),
+                          (int)infoPanelSize.X,
+                          (int)infoPanelSize.Y);
     }
 
     protected override void Update(GameTime gameTime)
@@ -265,6 +298,7 @@ public class TetrisGame : Game
                           Color.White);
         DrawMatrix();
         DrawCurrentBlock();
+        DrawInfoPanel();
         _spriteBatch.End();
 
         base.Draw(gameTime);
@@ -303,6 +337,94 @@ public class TetrisGame : Game
                                   Color.White);
             }
         }
+    }
+
+    // TODO(PERE): Create a Panel class or similiar and move all inner
+    // components inside the Panel class?
+    /// <summary>
+    /// Draws the score, current level and lines cleared
+    /// </summary>
+    private void DrawInfoPanel()
+    {
+        _spriteBatch.Draw(pixel,
+                          _infoPanelDest,
+                          new Color(0.1f, 0.1f, 0.1f, 0.85f));
+
+        // TODO(PERE): See how to best handle this, probably using a Panel
+        // class with a Label class or similar which could have margins
+        // and padding.
+        Vector2 panelLocation = _infoPanelDest.Location.ToVector2();
+        Vector2 panelSize = _infoPanelDest.Size.ToVector2();
+
+        // NOTE(PERE): The Y margin needs to be smaller, probably because the font
+        // has some spacing above for diacrittics, but we won't be using any for
+        // the foreseable future.
+        Vector2 panelMargin = new(8f, 6f);
+
+        // NOTE(PERE): For some reason, numbers don't need the Y adjustment.
+        Vector2 labelMargin = new(5f);
+        Vector2 titleDest = panelLocation + panelMargin;
+        _spriteBatch.DrawString(_fontTitle,
+                                "SCORE",
+                                titleDest,
+                                Color.White);
+
+        // TODO(PERE): Calculate the height of the text dynamically VS
+        // using "magic" numbers.
+        Rectangle labelPanel = new((int)titleDest.X,
+                                   (int)titleDest.Y + 24,
+                                   (int)panelSize.X - ((int)panelMargin.X * 2),
+                                   25);
+        _spriteBatch.Draw(pixel,
+                          labelPanel,
+                          Color.Black);
+
+        // TODO(PERE): Center text VS right align.
+        // TODO(PERE): Make sure we have enough space for the max possible score.
+        _spriteBatch.DrawString(_fontNormal,
+                                $"{_score}",
+                                labelPanel.Location.ToVector2() + labelMargin,
+                                Color.White);
+
+        titleDest = labelPanel.Location.ToVector2();
+        titleDest.Y += labelPanel.Height + panelMargin.Y;
+        _spriteBatch.DrawString(_fontTitle,
+                                "LEVEL",
+                                titleDest,
+                                Color.White);
+
+        // TODO(PERE): Calculate the height of the text dynamically VS
+        // using "magic" numbers.
+        labelPanel.Y = (int)titleDest.Y + 24;
+        _spriteBatch.Draw(pixel,
+                          labelPanel,
+                          Color.Black);
+
+        // TODO(PERE): Center text VS right align.
+        _spriteBatch.DrawString(_fontNormal,
+                                $"{_level}",
+                                labelPanel.Location.ToVector2() + labelMargin,
+                                Color.White);
+
+        titleDest = labelPanel.Location.ToVector2();
+        titleDest.Y += labelPanel.Height + panelMargin.Y;
+        _spriteBatch.DrawString(_fontTitle,
+                                "LINES",
+                                titleDest,
+                                Color.White);
+
+        // TODO(PERE): Calculate the height of the text dynamically VS
+        // using "magic" numbers.
+        labelPanel.Y = (int)titleDest.Y + 24;
+        _spriteBatch.Draw(pixel,
+                          labelPanel,
+                          Color.Black);
+
+        // TODO(PERE): Center text VS right align.
+        _spriteBatch.DrawString(_fontNormal,
+                                $"{_lines}",
+                                labelPanel.Location.ToVector2() + labelMargin,
+                                Color.White);
     }
 
     private bool BlockFits()
@@ -376,3 +498,9 @@ public class TetrisGame : Game
         return result;
     }
 }
+
+/*
+ * TODO(PERE):
+ * - Choose whether to use properties VS fields
+ * - Install StyleCop and fix related code style issues
+ */
