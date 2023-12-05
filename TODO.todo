@@ -14,9 +14,9 @@
 [x] Allow key repeat to move Tetromino left or right while holding down the appropriate key
 [ ] Add animation for cleared lines
 [ ] Add animation for lines moving down
-[ ] Proper spawning of Tetrominos
+[*] Proper spawning of Tetrominos
     [x] Spawn at top of the matrix (inside hidden rows)
-    [ ] Immediately go down if not blocked
+    [x] Immediately go down if not blocked
     [ ] If piece is blocked inside invisible rows, then game over
 
 == Randomizer == {

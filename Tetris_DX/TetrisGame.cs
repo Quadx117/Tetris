@@ -81,7 +81,7 @@ public class TetrisGame : Game
         _gameMatrix = new GameMatrix(22, 10);
         _tiles = new Texture2D[8];
 
-        _currentBlock = _blockQueue.Dequeue();
+        GetNextBlock();
     }
 
     protected override void Initialize()
@@ -456,9 +456,31 @@ public class TetrisGame : Game
         // TODO(PERE): Increment score
         _gameMatrix.ClearFullRows();
 
-        _currentBlock = _blockQueue.Dequeue();
+        GetNextBlock();
         // TODO(PERE): Enable canHold
-        // TODO(PERE): Validate game over conditions
+    }
+
+    private void GetNextBlock()
+    {
+        _currentBlock = _blockQueue.Dequeue();
+
+        if (BlockFits())
+        {
+            // Try to move the block inside the visible portion of the grid.
+            for (int index = 0; index < 2; ++index)
+            {
+                _currentBlock.MoveDown();
+                if (!BlockFits())
+                {
+                    _currentBlock.MoveUp();
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // TODO(PERE): Set game over if the block doesn't fit after spawning
+        }
     }
 
     /// <summary>
