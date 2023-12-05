@@ -81,7 +81,6 @@ public class TetrisGame : Game
         _gameMatrix = new GameMatrix(22, 10);
         _tiles = new Texture2D[8];
 
-        // TODO(PERE): Spawn block randomly
         _currentBlock = _blockQueue.Dequeue();
     }
 
@@ -257,9 +256,11 @@ public class TetrisGame : Game
 
         oldKeyboardState = newKeyboardState;
 
-        _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));
         if (_lockingDown)
         {
+            // TODO(PERE): Use the same variable (_elapsed) for the _lockDownDelay?
+            // Rename _elapsed if it's only used for fallig blocks.
+            _elapsed = TimeSpan.Zero;
             if (_lockDownDelay.TotalMilliseconds <= 0)
             {
                 _lockDownDelay = TimeSpan.FromSeconds(0.5);
@@ -271,15 +272,19 @@ public class TetrisGame : Game
                 _lockDownDelay = _lockDownDelay.Subtract(gameTime.ElapsedGameTime);
             }
         }
-        else if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
+        else
         {
-            _currentBlock.MoveDown();
-            if (!BlockFits())
+            _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));
+            if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
             {
-                _currentBlock.MoveUp();
-                _lockingDown = true;
+                _currentBlock.MoveDown();
+                if (!BlockFits())
+                {
+                    _currentBlock.MoveUp();
+                    _lockingDown = true;
+                }
+                _elapsed = _elapsed.Subtract(_dropSpeed);
             }
-            _elapsed = _elapsed.Subtract(_dropSpeed);
         }
 
         base.Update(gameTime);
