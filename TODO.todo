@@ -45,6 +45,7 @@
     [ ] Set Tetrominos preview from 1 to 6
     [ ] Theme selector
     [ ] Full screen VS windowed mode
+    [ ] Lock down mode
 [ ] Game Screen
     [*] Show score
     [*] Show number of lines
@@ -54,15 +55,36 @@
 == Controls/Functionnalities == {
 [x] Hard drop
 [x] Soft drop
+[*] Super Rotation System (SRS - https://tetris.wiki/Super_Rotation_System)
+    [x] Visual rotation - The natural rotation of a tetromino
+    [ ] Right/Left wall kick - Kick off an obstruction on the right or left
+    [ ] Floor kick - Kick off the floor, for when a tetromino has landed. Without kicks no rotation would be possible in some cases
+    [ ] Out of right well kick - If a tetromino is in a well, it can be rotated out
+    [ ] Out of left well kick - If a tetromino is in a well, it can be rotated out
+[ ] Spawn delay (ARE)
+[ ] Ghost piece
 [ ] Score system based on current level and number of cleared lines
-[ ] Proper rotation system with wall/floor kicks
 [x] Hold a Tetromino to be used later
 [*] Tetrominos preview (show the next Tetromino)
     [ ] Handle showing up to 6 Tetrominos based on config
-[ ] Proper lock down with max number of moves before locking in place
-    [ ] Make sure to not lock the piece in mid-air if we triggered the lockdown 
+[ ] Lock down
+    [ ] Implement proper lock down with max number of moves before locking in place (move reset)
+        as the default option.
+        A piece has 0.5 seconds after landing on the stack before it locks down.
+        For games with Master mode, the lock down delay value will decrease per level when the gravity is 20G.
+    [ ] Option to choose between one the the three modes
+        [ ] Infinite Placement Lock Down (or infinity - https://tetris.wiki/Infinity)
+            Rotating or moving the piece will reset this timer
+        [ ] Extended Placement Lock Down (or move reset)
+            Limited to 15 moves/rotations
+        [ ] Classic Lock Down (or step reset)
+            Reset the timer if the piece moves down a row
+    [ ] Make sure to not lock the piece in mid-air if we triggered the lockdown
         timer and we then moved the piece to a position where it can continue to
         move down.
+[ ] Input Manager
+    [ ] Add missing keyboard keybindings
+    [ ] Add controller support
 }
 
 == Polish == {
