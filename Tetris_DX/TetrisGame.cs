@@ -400,6 +400,7 @@ public class TetrisGame : Game
                           _playingAreaOrigin,
                           Color.White);
         DrawMatrix();
+        DrawCurrentBlockGhost();
         DrawCurrentBlock();
         DrawNextTetromino();
         DrawHeldTetromino();
@@ -422,6 +423,27 @@ public class TetrisGame : Game
                 _spriteBatch.Draw(_tiles[(int)CurrentBlock.Type],
                                   tileBounds,
                                   Color.White);
+            }
+        }
+    }
+
+    private void DrawCurrentBlockGhost()
+    {
+        int ghostOffset = GetGhostOffet();
+        if (ghostOffset > 0)
+        {
+            foreach (Point p in CurrentBlock.TilePositions())
+            {
+                // NOTE(PERE): We skip the first two rows which are meant to be invisible to the player.
+                if (p.Y > 1)
+                {
+                    Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
+                                         (int)_matrixOrigin.Y + ((p.Y + ghostOffset) * _cellSize.Y));
+                    Rectangle tileBounds = new(location, _cellSize);
+                    _spriteBatch.Draw(_tiles[(int)CurrentBlock.Type],
+                                      tileBounds,
+                                      Color.White * 0.25f);
+                }
             }
         }
     }
@@ -553,6 +575,37 @@ public class TetrisGame : Game
                                 $"{_lines}",
                                 labelPanel.Location.ToVector2() + labelMargin,
                                 Color.White);
+    }
+
+    /// <summary>
+    /// Returns the Y offset at which to draw the ghost Tetromino based on the
+    /// current Tetromino position.
+    /// </summary>
+    /// <returns>
+    /// The Y offset at which to draw the ghost Tetromino based on the current
+    /// Tetromino position.
+    /// </returns>
+    private int GetGhostOffet()
+    {
+        int result = 0;
+
+        bool blockFits = true;
+        while (blockFits)
+        {
+            ++result;
+
+            foreach (Point p in CurrentBlock.TilePositions())
+            {
+                Point testP = new(p.X, p.Y + result);
+                if (!_gameMatrix.IsEmpty(testP))
+                {
+                    blockFits = false;
+                    break;
+                }
+            }
+        }
+
+        return --result;
     }
 
     private bool BlockFits()

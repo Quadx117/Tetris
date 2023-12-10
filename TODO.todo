@@ -42,6 +42,7 @@
 [ ] Options screen
     [ ] Enable/Disable the grid
     [ ] Enable/Disable the ghost Tetromino at the bottom of the screen
+        [ ] Choose faded VS outlined?
     [ ] Set Tetrominos preview from 1 to 6
     [ ] Theme selector
     [ ] Full screen VS windowed mode
@@ -62,7 +63,7 @@
     [ ] Out of right well kick - If a tetromino is in a well, it can be rotated out
     [ ] Out of left well kick - If a tetromino is in a well, it can be rotated out
 [ ] Spawn delay (ARE)
-[ ] Ghost piece
+[x] Draw ghost piece
 [ ] Score system based on current level and number of cleared lines
 [x] Hold a Tetromino to be used later
 [*] Tetrominos preview (show the next Tetromino)
