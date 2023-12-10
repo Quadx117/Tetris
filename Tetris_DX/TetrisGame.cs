@@ -61,6 +61,7 @@ public class TetrisGame : Game
 
     private Rectangle _infoPanelDest;
     private Rectangle _previewPanelDest;
+    private Rectangle _heldPanelDest;
 
     private TimeSpan _elapsed = TimeSpan.Zero;
     /// <summary>
@@ -73,6 +74,8 @@ public class TetrisGame : Game
     private TimeSpan _lockDownDelay = TimeSpan.FromSeconds(0.5);
     private bool _lockingDown = false;
     private BlockBase _currentBlock;
+    private BlockBase _heldBlock;
+    private bool _canHold = true;
     private readonly BlockQueue _blockQueue = new();
 
     // TODO(PERE): Create a PlayerController class and handle keyboard,
@@ -99,6 +102,34 @@ public class TetrisGame : Game
     private SpriteFont _fontNormal;
     private SpriteFont _fontTitle;
 
+    private BlockBase CurrentBlock
+    {
+        get => _currentBlock;
+        set
+        {
+            _currentBlock = value;
+            _currentBlock.Reset();
+
+            if (BlockFits())
+            {
+                // Try to move the block inside the visible portion of the grid.
+                for (int index = 0; index < 2; ++index)
+                {
+                    _currentBlock.MoveDown();
+                    if (!BlockFits())
+                    {
+                        _currentBlock.MoveUp();
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // TODO(PERE): Set game over if the block doesn't fit after spawning
+            }
+        }
+    }
+
     public TetrisGame()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -109,7 +140,7 @@ public class TetrisGame : Game
         _tiles = new Texture2D[8];
         _blocks = new Texture2D[8];
 
-        GetNextBlock();
+        CurrentBlock = _blockQueue.Dequeue();
     }
 
     protected override void Initialize()
@@ -184,6 +215,16 @@ public class TetrisGame : Game
                           (int)(_playingAreaOrigin.Y),
                           (int)(previewPanelTexture.Width * previewPanelScale),
                           (int)(previewPanelTexture.Height * previewPanelScale));
+
+        float heldPanelScale = 0.20f;
+        Texture2D heldPanelTexture = _blocks[(int)BlockType.None];
+        Vector2 heldPanelSize = new(heldPanelTexture.Width * heldPanelScale,
+                                    heldPanelTexture.Height * heldPanelScale);
+        _heldPanelDest =
+            new Rectangle((int)(_playingAreaOrigin.X - heldPanelSize.X - playingFieldMargin),
+                          (int)(_playingAreaOrigin.Y),
+                          (int)(heldPanelSize.X),
+                          (int)(heldPanelSize.Y));
     }
 
     protected override void Update(GameTime gameTime)
@@ -249,17 +290,17 @@ public class TetrisGame : Game
                     // Nothing to do.
                     break;
                 case MovementDirection.Left:
-                    _currentBlock.MoveLeft();
+                    CurrentBlock.MoveLeft();
                     if (!BlockFits())
                     {
-                        _currentBlock.MoveRight();
+                        CurrentBlock.MoveRight();
                     }
                     break;
                 case MovementDirection.Right:
-                    _currentBlock.MoveRight();
+                    CurrentBlock.MoveRight();
                     if (!BlockFits())
                     {
-                        _currentBlock.MoveLeft();
+                        CurrentBlock.MoveLeft();
                     }
                     break;
             }
@@ -267,18 +308,18 @@ public class TetrisGame : Game
 
         if (KeyDown(Keys.Up))
         {
-            _currentBlock.RotateCW();
+            CurrentBlock.RotateCW();
             if (!BlockFits())
             {
-                _currentBlock.RotateCCW();
+                CurrentBlock.RotateCCW();
             }
         }
         else if (KeyDown(Keys.Z))
         {
-            _currentBlock.RotateCCW();
+            CurrentBlock.RotateCCW();
             if (!BlockFits())
             {
-                _currentBlock.RotateCW();
+                CurrentBlock.RotateCW();
             }
         }
 
@@ -295,11 +336,20 @@ public class TetrisGame : Game
         {
             do
             {
-                _currentBlock.MoveDown();
+                CurrentBlock.MoveDown();
             } while (BlockFits());
 
-            _currentBlock.MoveUp();
+            CurrentBlock.MoveUp();
             LockDownBlock();
+        }
+
+        if (KeyDown(Keys.C) &&
+            _canHold)
+        {
+            BlockBase tmp = _heldBlock;
+            _heldBlock = CurrentBlock;
+            CurrentBlock = tmp ?? _blockQueue.Dequeue();
+            _canHold = false;
         }
 
         oldKeyboardState = newKeyboardState;
@@ -325,10 +375,10 @@ public class TetrisGame : Game
             _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));
             if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
             {
-                _currentBlock.MoveDown();
+                CurrentBlock.MoveDown();
                 if (!BlockFits())
                 {
-                    _currentBlock.MoveUp();
+                    CurrentBlock.MoveUp();
                     _lockingDown = true;
                 }
                 _elapsed = _elapsed.Subtract(_dropSpeed);
@@ -352,6 +402,7 @@ public class TetrisGame : Game
         DrawMatrix();
         DrawCurrentBlock();
         DrawNextTetromino();
+        DrawHeldTetromino();
         DrawInfoPanel();
         _spriteBatch.End();
 
@@ -360,7 +411,7 @@ public class TetrisGame : Game
 
     private void DrawCurrentBlock()
     {
-        foreach (Point p in _currentBlock.TilePositions())
+        foreach (Point p in CurrentBlock.TilePositions())
         {
             // NOTE(PERE): We skip the first two rows which are meant to be invisible to the player.
             if (p.Y > 1)
@@ -368,7 +419,7 @@ public class TetrisGame : Game
                 Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
                                      (int)_matrixOrigin.Y + (p.Y * _cellSize.Y));
                 Rectangle tileBounds = new(location, _cellSize);
-                _spriteBatch.Draw(_tiles[(int)_currentBlock.Type],
+                _spriteBatch.Draw(_tiles[(int)CurrentBlock.Type],
                                   tileBounds,
                                   Color.White);
             }
@@ -384,6 +435,17 @@ public class TetrisGame : Game
         // when we do a better version of the preview window.
         _spriteBatch.Draw(_blocks[(int)_blockQueue.PeekNextBlockType()],
                           _previewPanelDest,
+                          Color.White);
+    }
+
+    private void DrawHeldTetromino()
+    {
+        // TODO(PERE): We could "cache" the held Tetromino type and update it only
+        // after holding a piece since we know it can't change otherwise. This would
+        // be a small optimization though since this is not a demanding game.
+        BlockType heldType = _heldBlock?.Type ?? BlockType.None;
+        _spriteBatch.Draw(_blocks[(int)heldType],
+                          _heldPanelDest,
                           Color.White);
     }
 
@@ -495,7 +557,7 @@ public class TetrisGame : Game
 
     private bool BlockFits()
     {
-        foreach (Point p in _currentBlock.TilePositions())
+        foreach (Point p in CurrentBlock.TilePositions())
         {
             if (!_gameMatrix.IsEmpty(p))
             {
@@ -508,40 +570,17 @@ public class TetrisGame : Game
 
     private void LockDownBlock()
     {
-        foreach (Point p in _currentBlock.TilePositions())
+        foreach (Point p in CurrentBlock.TilePositions())
         {
-            _gameMatrix[p.Y, p.X] = _currentBlock.Type;
+            _gameMatrix[p.Y, p.X] = CurrentBlock.Type;
         }
 
         // TODO(PERE): Better clearing with visual feedback
         // TODO(PERE): Increment score
         _gameMatrix.ClearFullRows();
 
-        GetNextBlock();
-        // TODO(PERE): Enable canHold
-    }
-
-    private void GetNextBlock()
-    {
-        _currentBlock = _blockQueue.Dequeue();
-
-        if (BlockFits())
-        {
-            // Try to move the block inside the visible portion of the grid.
-            for (int index = 0; index < 2; ++index)
-            {
-                _currentBlock.MoveDown();
-                if (!BlockFits())
-                {
-                    _currentBlock.MoveUp();
-                    break;
-                }
-            }
-        }
-        else
-        {
-            // TODO(PERE): Set game over if the block doesn't fit after spawning
-        }
+        CurrentBlock = _blockQueue.Dequeue();
+        _canHold = true;
     }
 
     /// <summary>

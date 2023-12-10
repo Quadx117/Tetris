@@ -56,7 +56,7 @@
 [x] Soft drop
 [ ] Score system based on current level and number of cleared lines
 [ ] Proper rotation system with wall/floor kicks
-[ ] Hold a Tetromino to be used later
+[x] Hold a Tetromino to be used later
 [*] Tetrominos preview (show the next Tetromino)
     [ ] Handle showing up to 6 Tetrominos based on config
 [ ] Proper lock down with max number of moves before locking in place
