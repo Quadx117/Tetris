@@ -19,7 +19,33 @@ public class TetrisGame : Game
     private Texture2D pixel;
 
     private readonly GameMatrix _gameMatrix;
+
+    /// <summary>
+    /// The assets used to render individual blocks in the matrix or to render
+    /// the blocks for the current Tetromino. The images in this array must be
+    /// in the same order as the members of the <see cref="BlockType"/> <c>enum</c>
+    /// since it is used to index inside this array.
+    /// </summary>
     private readonly Texture2D[] _tiles;
+
+    // NOTE(PERE): This is temporary since it is tied to the current assets
+    // which don't allow to preview more than one Tetromino at a time. Eventually,
+    // I want to create a custom panel and preview up to six Tetrominos.
+    // TODO(PERE): Separate the "panel" from the actual Tetrominos so we can
+    // configure how many Tetrominos to show in the preview and have more control
+    // over the UI. We could also create a class that would render each Tetrominos
+    // using the _tiles instead of having actual assets, but the tradeoff seems pretty
+    // minor since there is only 7 Tetrominos and it is quite quick to create the assets
+    // in the case where we would want to change the theme.
+    /// <summary>
+    /// The array of possible blocks inside a square rectangle with rounded borders
+    /// used to display the next Tetromino and the held Tetromino. This also includes
+    /// an "empty block" used when there are no held Tetromino. The images in this array
+    /// must be in the same order as the members of the <see cref="BlockType"/> <c>enum</c>
+    /// since it is used to index inside this array.
+    /// </summary>
+    private readonly Texture2D[] _blocks;
+
     // TODO(PERE): See how to calculate the cell size based on the window size,
     // espacially if we want to resize the screen.
     private readonly Point _cellSize = new(25);
@@ -34,6 +60,7 @@ public class TetrisGame : Game
     private Vector2 _playingAreaOrigin;
 
     private Rectangle _infoPanelDest;
+    private Rectangle _previewPanelDest;
 
     private TimeSpan _elapsed = TimeSpan.Zero;
     /// <summary>
@@ -80,6 +107,7 @@ public class TetrisGame : Game
 
         _gameMatrix = new GameMatrix(22, 10);
         _tiles = new Texture2D[8];
+        _blocks = new Texture2D[8];
 
         GetNextBlock();
     }
@@ -123,6 +151,15 @@ public class TetrisGame : Game
         _tiles[6] = Content.Load<Texture2D>(@"Images\TilePurple");
         _tiles[7] = Content.Load<Texture2D>(@"Images\TileRed");
 
+        _blocks[0] = Content.Load<Texture2D>(@"Images\Block-Empty");
+        _blocks[1] = Content.Load<Texture2D>(@"Images\Block-I");
+        _blocks[2] = Content.Load<Texture2D>(@"Images\Block-J");
+        _blocks[3] = Content.Load<Texture2D>(@"Images\Block-L");
+        _blocks[4] = Content.Load<Texture2D>(@"Images\Block-O");
+        _blocks[5] = Content.Load<Texture2D>(@"Images\Block-S");
+        _blocks[6] = Content.Load<Texture2D>(@"Images\Block-T");
+        _blocks[7] = Content.Load<Texture2D>(@"Images\Block-Z");
+
         _fontNormal = Content.Load<SpriteFont>("Fonts/Game/normal");
         _fontTitle = Content.Load<SpriteFont>("Fonts/Game/title");
 
@@ -131,11 +168,22 @@ public class TetrisGame : Game
         // NOTE(PERE): We use a margin of 10 pixels between the infoPanel and
         // the playingField and a panelSize of 174x174.
         Vector2 infoPanelSize = new(173);
+        int playingFieldMargin = 10;
         _infoPanelDest =
-            new Rectangle((int)(_playingAreaOrigin.X - infoPanelSize.X - 10),
+            new Rectangle((int)(_playingAreaOrigin.X - infoPanelSize.X - playingFieldMargin),
                           (int)(_playingAreaOrigin.Y + PlayingAreaTexture.Height - infoPanelSize.Y),
                           (int)infoPanelSize.X,
                           (int)infoPanelSize.Y);
+
+        // NOTE(PERE): We use the same 10 pixels margin between the previewPanel
+        // and the playingField
+        float previewPanelScale = 0.20f;
+        Texture2D previewPanelTexture = _blocks[(int)BlockType.None];
+        _previewPanelDest =
+            new Rectangle((int)(_playingAreaOrigin.X + PlayingAreaTexture.Width + playingFieldMargin),
+                          (int)(_playingAreaOrigin.Y),
+                          (int)(previewPanelTexture.Width * previewPanelScale),
+                          (int)(previewPanelTexture.Height * previewPanelScale));
     }
 
     protected override void Update(GameTime gameTime)
@@ -303,6 +351,7 @@ public class TetrisGame : Game
                           Color.White);
         DrawMatrix();
         DrawCurrentBlock();
+        DrawNextTetromino();
         DrawInfoPanel();
         _spriteBatch.End();
 
@@ -324,6 +373,18 @@ public class TetrisGame : Game
                                   Color.White);
             }
         }
+    }
+
+    private void DrawNextTetromino()
+    {
+        // TODO(PERE): We could "cache" the next Tetromino and update it only
+        // after locking down the current piece or after holding the first piece
+        // since we know it can't change otherwise. This would be a small optimization
+        // though since this is not a demanding game, we will evaluate this idea
+        // when we do a better version of the preview window.
+        _spriteBatch.Draw(_blocks[(int)_blockQueue.PeekNextBlockType()],
+                          _previewPanelDest,
+                          Color.White);
     }
 
     private void DrawMatrix()

@@ -47,6 +47,11 @@ internal class BlockQueue
         return result;
     }
 
+    public BlockType PeekNextBlockType()
+    {
+        return _queue.Peek().Type;
+    }
+
     private BlockBase NextRandomBlock()
     {
         return _blocks[_random.Next(_blocks.Length)];
