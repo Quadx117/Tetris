@@ -48,7 +48,7 @@ internal class GameMatrix
         return true;
     }
 
-    public void ClearFullRows()
+    public int ClearFullRows()
     {
         int cleared = 0;
 
@@ -64,6 +64,8 @@ internal class GameMatrix
                 MoveRowDown(rowIndex, cleared);
             }
         }
+
+        return cleared;
     }
 
     public void Reset()

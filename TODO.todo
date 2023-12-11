@@ -32,6 +32,7 @@
 [ ] Handle resizing the screen
 [ ] Handle toggling full screen
 [ ] Title screen
+    [ ] Select starting level (still increase every 10 lines cleared)
 [ ] Pause screen
 [ ] Game Over screen
     [ ] Show stats
@@ -47,10 +48,10 @@
     [ ] Theme selector
     [ ] Full screen VS windowed mode
     [ ] Lock down mode
-[ ] Game Screen
-    [*] Show score
-    [*] Show number of lines
-    [*] Show current level
+[x] Game Screen
+    [x] Show score
+    [x] Show number of lines
+    [x] Show current level
 }
 
 == Controls/Functionnalities == {
@@ -64,7 +65,24 @@
     [ ] Out of left well kick - If a tetromino is in a well, it can be rotated out
 [ ] Spawn delay (ARE)
 [x] Draw ghost piece
-[ ] Score system based on current level and number of cleared lines
+[ ] Score system based on current level and number of cleared lines (https://tetris.wiki/Scoring#Recent_guideline_compatible_games)
+    [ ] Single = 100 × level
+    [ ] Double = 300 × level
+    [ ] Triple = 500 × level
+    [ ] Tetris = 800 × level <difficult>
+    [ ] Mini T-Spin no line(s) = 100 × level
+    [ ] T-Spin no line(s) = 400 × level
+    [ ] Mini T-Spin Single = 200 × level <difficult>
+    [ ] T-Spin Single = 800 × level <difficult>
+    [ ] Mini T-Spin Double (if present) = 400 × level <difficult>
+    [ ] T-Spin Double = 1200 × level <difficult>
+    [ ] T-Spin Triple = 1600 × level <difficult>
+    [ ] Back-to-Back <difficult> line clears = Action score × 1.5 (excluding soft drop and hard drop)
+    [ ] Combo = 50 × combo count × level
+    [ ] Soft drop = 1 per cell
+    [ ] Hard drop = 2 per cell
+    [ ] Increase level every 10 lines cleared (which should also increse speed)
+
 [x] Hold a Tetromino to be used later
 [*] Tetrominos preview (show the next Tetromino)
     [ ] Handle showing up to 6 Tetrominos based on config

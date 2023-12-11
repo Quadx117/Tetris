@@ -674,7 +674,16 @@ public class TetrisGame : Game
 
         // TODO(PERE): Better clearing with visual feedback
         // TODO(PERE): Increment score
-        _gameMatrix.ClearFullRows();
+        int cleared = _gameMatrix.ClearFullRows();
+        _lines += cleared;
+
+        if (cleared > 0)
+        {
+            // NOTE(PERE): Every 10 lines we want to increment the level.
+            // Multiplying by 0.1 is equivalent as dividing by 10 but is
+            // slightly faster.
+            _level = (int)(_lines * 0.1f) + 1;
+        }
 
         CurrentBlock = _blockQueue.Dequeue();
         _canHold = true;
