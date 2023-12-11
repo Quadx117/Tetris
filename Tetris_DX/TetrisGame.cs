@@ -68,7 +68,7 @@ public class TetrisGame : Game
     /// <summary>
     /// Amount of time before the piece moves down by one row
     /// </summary>
-    private readonly TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
+    private TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
     /// <summary>
     /// Amount of time before the piece is locked in place.
     /// </summary>
@@ -683,6 +683,8 @@ public class TetrisGame : Game
             // Multiplying by 0.1 is equivalent as dividing by 10 but is
             // slightly faster.
             _level = (int)(_lines * 0.1f) + 1;
+            float speed = (float)Math.Pow(0.8f - ((_level - 1) * 0.007f), (_level - 1));
+            _dropSpeed = TimeSpan.FromSeconds(speed);
         }
 
         CurrentBlock = _blockQueue.Dequeue();
@@ -736,4 +738,7 @@ public class TetrisGame : Game
  * TODO(PERE):
  * - Choose whether to use properties VS fields
  * - Install StyleCop and fix related code style issues
+ * - I got a GAME OVER probably by hard dropping a piece at the same time
+ *   it was locking down. I hard drop the piece, then saw the GAME OVER
+ *   screen while the current Tetromino was at the top of the screen.
  */

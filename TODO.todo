@@ -82,6 +82,8 @@
     [ ] Soft drop = 1 per cell
     [ ] Hard drop = 2 per cell
     [ ] Increase level every 10 lines cleared (which should also increse speed)
+[x] Drop speed based on level
+    [x] Official formula? (https://tetris.fandom.com/wiki/Tetris_Worlds)
 
 [x] Hold a Tetromino to be used later
 [*] Tetrominos preview (show the next Tetromino)
