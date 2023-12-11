@@ -100,7 +100,7 @@
             Limited to 15 moves/rotations
         [ ] Classic Lock Down (or step reset)
             Reset the timer if the piece moves down a row
-    [ ] Make sure to not lock the piece in mid-air if we triggered the lockdown
+    [x] Make sure to not lock the piece in mid-air if we triggered the lockdown
         timer and we then moved the piece to a position where it can continue to
         move down.
 [ ] Input Manager

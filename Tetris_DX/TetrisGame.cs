@@ -379,9 +379,16 @@ public class TetrisGame : Game
                 _elapsed = TimeSpan.Zero;
                 if (_lockDownDelay.TotalMilliseconds <= 0)
                 {
+                    // Try to move down one last time in case the player moved the piece
+                    CurrentBlock.MoveDown();
+                    if (!BlockFits())
+                    {
+                        CurrentBlock.MoveUp();
+                        LockDownBlock();
+                    }
+
                     _lockDownDelay = TimeSpan.FromSeconds(0.5);
                     _lockingDown = false;
-                    LockDownBlock();
                 }
                 else
                 {
