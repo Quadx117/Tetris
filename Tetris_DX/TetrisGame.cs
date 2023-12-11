@@ -479,7 +479,7 @@ public class TetrisGame : Game
             foreach (Point p in CurrentBlock.TilePositions())
             {
                 // NOTE(PERE): We skip the first two rows which are meant to be invisible to the player.
-                if (p.Y > 1)
+                if (p.Y + ghostOffset > 1)
                 {
                     Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
                                          (int)_matrixOrigin.Y + ((p.Y + ghostOffset) * _cellSize.Y));
