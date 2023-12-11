@@ -248,6 +248,9 @@ public class TetrisGame : Game
                 _blockQueue.Reset();
                 _heldBlock = null;
                 CurrentBlock = _blockQueue.Dequeue();
+                _lines = 0;
+                _level = 1;
+                _dropSpeed = TimeSpan.FromSeconds(1);
                 _gameOver = false;
             }
         }
