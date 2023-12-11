@@ -12,6 +12,7 @@ public class TetrisGame : Game
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
+    private bool _gameOver;
     /// <summary>
     /// Used to draw basic shapes with any color, such as the background
     /// rectangle under the score and other info.
@@ -125,7 +126,7 @@ public class TetrisGame : Game
             }
             else
             {
-                // TODO(PERE): Set game over if the block doesn't fit after spawning
+                _gameOver = true;
             }
         }
     }
@@ -236,154 +237,171 @@ public class TetrisGame : Game
         }
 
         newKeyboardState = Keyboard.GetState();
-        if (KeyDown(Keys.Left))
-        {
-            _movementDirection = MovementDirection.Left;
-            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-        }
-        else if (KeyDown(Keys.Right))
-        {
-            _movementDirection = MovementDirection.Right;
-            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-        }
 
-        if (_movementDirection == MovementDirection.Left &&
-            KeyUp(Keys.Left) &&
-            KeyPressed(Keys.Right))
+        // TODO(PERE): Use a SceneGraph/SceneManager?
+        if (_gameOver)
         {
-            _movementDirection = MovementDirection.Right;
-            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-        }
-        else if (_movementDirection == MovementDirection.Right &&
-                 KeyUp(Keys.Right) &&
-                 KeyPressed(Keys.Left))
-        {
-            _movementDirection = MovementDirection.Left;
-            _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-        }
-
-        if (_movementDirection == MovementDirection.Left &&
-            KeyPressed(Keys.Left))
-        {
-            _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
-        }
-        else if (_movementDirection == MovementDirection.Right &&
-                 KeyPressed(Keys.Right))
-        {
-            _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
-        }
-
-        // NOTE(PERE): If we pressed left or right, then _elapsedSinceLastAutoRepeat
-        // will be 0 so we know we want to move the Tetromino in that case. Otherwise,
-        // we wait for the appropirate amount of time before auto-repeating the move.
-        if (_elapsedSinceLastAutoRepeat == TimeSpan.Zero ||
-            _elapsedSinceLastAutoRepeat > _autoRepeatDelay)
-        {
-            if (_elapsedSinceLastAutoRepeat > _autoRepeatDelay)
+            if (KeyDown(Keys.Space) ||
+                KeyDown(Keys.Enter))
             {
-                _elapsedSinceLastAutoRepeat -= _autoRepeatRate;
-            }
-
-            switch (_movementDirection)
-            {
-                case MovementDirection.None:
-                    // Nothing to do.
-                    break;
-                case MovementDirection.Left:
-                    CurrentBlock.MoveLeft();
-                    if (!BlockFits())
-                    {
-                        CurrentBlock.MoveRight();
-                    }
-                    break;
-                case MovementDirection.Right:
-                    CurrentBlock.MoveRight();
-                    if (!BlockFits())
-                    {
-                        CurrentBlock.MoveLeft();
-                    }
-                    break;
-            }
-        }
-
-        if (KeyDown(Keys.Up))
-        {
-            CurrentBlock.RotateCW();
-            if (!BlockFits())
-            {
-                CurrentBlock.RotateCCW();
-            }
-        }
-        else if (KeyDown(Keys.Z))
-        {
-            CurrentBlock.RotateCCW();
-            if (!BlockFits())
-            {
-                CurrentBlock.RotateCW();
-            }
-        }
-
-        if (KeyDown(Keys.Down))
-        {
-            _softDropMultiplier = 20;
-        }
-        else if (KeyUp(Keys.Down))
-        {
-            _softDropMultiplier = 1;
-        }
-
-        if (KeyDown(Keys.Space))
-        {
-            do
-            {
-                CurrentBlock.MoveDown();
-            } while (BlockFits());
-
-            CurrentBlock.MoveUp();
-            LockDownBlock();
-        }
-
-        if (KeyDown(Keys.C) &&
-            _canHold)
-        {
-            BlockBase tmp = _heldBlock;
-            _heldBlock = CurrentBlock;
-            CurrentBlock = tmp ?? _blockQueue.Dequeue();
-            _canHold = false;
-        }
-
-        oldKeyboardState = newKeyboardState;
-
-        if (_lockingDown)
-        {
-            // TODO(PERE): Use the same variable (_elapsed) for the _lockDownDelay?
-            // Rename _elapsed if it's only used for fallig blocks.
-            _elapsed = TimeSpan.Zero;
-            if (_lockDownDelay.TotalMilliseconds <= 0)
-            {
-                _lockDownDelay = TimeSpan.FromSeconds(0.5);
-                _lockingDown = false;
-                LockDownBlock();
-            }
-            else
-            {
-                _lockDownDelay = _lockDownDelay.Subtract(gameTime.ElapsedGameTime);
+                _gameMatrix.Reset();
+                _blockQueue.Reset();
+                _heldBlock = null;
+                CurrentBlock = _blockQueue.Dequeue();
+                _gameOver = false;
             }
         }
         else
         {
-            _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));
-            if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
+            if (KeyDown(Keys.Left))
             {
-                CurrentBlock.MoveDown();
+                _movementDirection = MovementDirection.Left;
+                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+            }
+            else if (KeyDown(Keys.Right))
+            {
+                _movementDirection = MovementDirection.Right;
+                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+            }
+
+            if (_movementDirection == MovementDirection.Left &&
+                KeyUp(Keys.Left) &&
+                KeyPressed(Keys.Right))
+            {
+                _movementDirection = MovementDirection.Right;
+                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+            }
+            else if (_movementDirection == MovementDirection.Right &&
+                     KeyUp(Keys.Right) &&
+                     KeyPressed(Keys.Left))
+            {
+                _movementDirection = MovementDirection.Left;
+                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+            }
+
+            if (_movementDirection == MovementDirection.Left &&
+                KeyPressed(Keys.Left))
+            {
+                _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
+            }
+            else if (_movementDirection == MovementDirection.Right &&
+                     KeyPressed(Keys.Right))
+            {
+                _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
+            }
+
+            // NOTE(PERE): If we pressed left or right, then _elapsedSinceLastAutoRepeat
+            // will be 0 so we know we want to move the Tetromino in that case. Otherwise,
+            // we wait for the appropirate amount of time before auto-repeating the move.
+            if (_elapsedSinceLastAutoRepeat == TimeSpan.Zero ||
+                _elapsedSinceLastAutoRepeat > _autoRepeatDelay)
+            {
+                if (_elapsedSinceLastAutoRepeat > _autoRepeatDelay)
+                {
+                    _elapsedSinceLastAutoRepeat -= _autoRepeatRate;
+                }
+
+                switch (_movementDirection)
+                {
+                    case MovementDirection.None:
+                        // Nothing to do.
+                        break;
+                    case MovementDirection.Left:
+                        CurrentBlock.MoveLeft();
+                        if (!BlockFits())
+                        {
+                            CurrentBlock.MoveRight();
+                        }
+                        break;
+                    case MovementDirection.Right:
+                        CurrentBlock.MoveRight();
+                        if (!BlockFits())
+                        {
+                            CurrentBlock.MoveLeft();
+                        }
+                        break;
+                }
+            }
+
+            if (KeyDown(Keys.Up))
+            {
+                CurrentBlock.RotateCW();
                 if (!BlockFits())
                 {
-                    CurrentBlock.MoveUp();
-                    _lockingDown = true;
+                    CurrentBlock.RotateCCW();
                 }
-                _elapsed = _elapsed.Subtract(_dropSpeed);
+            }
+            else if (KeyDown(Keys.Z))
+            {
+                CurrentBlock.RotateCCW();
+                if (!BlockFits())
+                {
+                    CurrentBlock.RotateCW();
+                }
+            }
+
+            if (KeyDown(Keys.Down))
+            {
+                _softDropMultiplier = 20;
+            }
+            else if (KeyUp(Keys.Down))
+            {
+                _softDropMultiplier = 1;
+            }
+
+            if (KeyDown(Keys.Space))
+            {
+                do
+                {
+                    CurrentBlock.MoveDown();
+                } while (BlockFits());
+
+                CurrentBlock.MoveUp();
+                LockDownBlock();
+            }
+
+            if (KeyDown(Keys.C) &&
+                _canHold)
+            {
+                BlockBase tmp = _heldBlock;
+                _heldBlock = CurrentBlock;
+                CurrentBlock = tmp ?? _blockQueue.Dequeue();
+                _canHold = false;
+            }
+
+            if (_lockingDown)
+            {
+                // TODO(PERE): Use the same variable (_elapsed) for the _lockDownDelay?
+                // Rename _elapsed if it's only used for fallig blocks.
+                _elapsed = TimeSpan.Zero;
+                if (_lockDownDelay.TotalMilliseconds <= 0)
+                {
+                    _lockDownDelay = TimeSpan.FromSeconds(0.5);
+                    _lockingDown = false;
+                    LockDownBlock();
+                }
+                else
+                {
+                    _lockDownDelay = _lockDownDelay.Subtract(gameTime.ElapsedGameTime);
+                }
+            }
+            else
+            {
+                _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));
+                if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
+                {
+                    CurrentBlock.MoveDown();
+                    if (!BlockFits())
+                    {
+                        CurrentBlock.MoveUp();
+                        _lockingDown = true;
+                    }
+                    _elapsed = _elapsed.Subtract(_dropSpeed);
+                }
             }
         }
+
+        oldKeyboardState = newKeyboardState;
 
         base.Update(gameTime);
     }
@@ -393,6 +411,7 @@ public class TetrisGame : Game
         GraphicsDevice.Clear(Color.Black);
 
         _spriteBatch.Begin();
+
         _spriteBatch.Draw(BackgroundTexture,
                           _graphics.GraphicsDevice.Viewport.Bounds,
                           Color.White);
@@ -400,11 +419,36 @@ public class TetrisGame : Game
                           _playingAreaOrigin,
                           Color.White);
         DrawMatrix();
-        DrawCurrentBlockGhost();
-        DrawCurrentBlock();
         DrawNextTetromino();
         DrawHeldTetromino();
         DrawInfoPanel();
+
+        if (_gameOver)
+        {
+            _spriteBatch.Draw(pixel,
+                              new Rectangle(0,
+                                            0,
+                                            _graphics.PreferredBackBufferWidth,
+                                            _graphics.PreferredBackBufferHeight),
+                              Color.Black * 0.6f);
+
+            // TODO(PERE): Calculate center by measuring the string
+            // TODO(PERE): Use a bigger font for the "GAME OVER" text
+            // TODO(PERE): The todo's above aren't done since this is
+            // temporary and should be replaced by a proper popup screen
+            // with stats and buttons to restart or quit.
+            _spriteBatch.DrawString(_fontTitle,
+                                    "GAME OVER",
+                                    new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 50,
+                                                (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
+                                    Color.White);
+        }
+        else
+        {
+            DrawCurrentBlockGhost();
+            DrawCurrentBlock();
+        }
+
         _spriteBatch.End();
 
         base.Draw(gameTime);

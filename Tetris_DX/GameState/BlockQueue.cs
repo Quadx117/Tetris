@@ -23,18 +23,7 @@ internal class BlockQueue
 
     public BlockQueue()
     {
-        // TODO(PERE): Proper 7-bag random generator or 35-bag with 6 rolls
-        BlockBase block = NextRandomBlock();
-        do
-        {
-            _queue.Enqueue(block);
-            BlockType lastBlockType = block.Type;
-            do
-            {
-                block = NextRandomBlock();
-            } while (block.Type == lastBlockType);
-
-        } while (_queue.Count < 7);
+        FillQueue();
     }
 
     public BlockBase Dequeue()
@@ -50,6 +39,28 @@ internal class BlockQueue
     public BlockType PeekNextBlockType()
     {
         return _queue.Peek().Type;
+    }
+
+    public void Reset()
+    {
+        _queue.Clear();
+        FillQueue();
+    }
+
+    private void FillQueue()
+    {
+        // TODO(PERE): Proper 7-bag random generator or 35-bag with 6 rolls
+        BlockBase block = NextRandomBlock();
+        do
+        {
+            _queue.Enqueue(block);
+            BlockType lastBlockType = block.Type;
+            do
+            {
+                block = NextRandomBlock();
+            } while (block.Type == lastBlockType);
+
+        } while (_queue.Count < 7);
     }
 
     private BlockBase NextRandomBlock()

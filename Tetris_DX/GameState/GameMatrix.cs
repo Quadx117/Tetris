@@ -66,6 +66,17 @@ internal class GameMatrix
         }
     }
 
+    public void Reset()
+    {
+        for (int rowIndex = 0; rowIndex < RowCount; rowIndex++)
+        {
+            for (int columnIndex = 0; columnIndex < ColumnCount; columnIndex++)
+            {
+                _grid[rowIndex, columnIndex] = BlockType.None;
+            }
+        }
+    }
+
     private void ClearRow(int rowIndex)
     {
         for (int columnIndex = 0; columnIndex < ColumnCount; columnIndex++)
