@@ -357,9 +357,11 @@ public class TetrisGame : Game
                 do
                 {
                     CurrentBlock.MoveDown();
+                    _score += 2;
                 } while (BlockFits());
 
                 CurrentBlock.MoveUp();
+                _score -= 2;
                 LockDownBlock();
             }
 
@@ -406,6 +408,11 @@ public class TetrisGame : Game
                         CurrentBlock.MoveUp();
                         _lockingDown = true;
                     }
+                    else if (_softDropMultiplier > 1)
+                    {
+                        _score += 1;
+                    }
+
                     _elapsed = _elapsed.Subtract(_dropSpeed);
                 }
             }
@@ -689,6 +696,18 @@ public class TetrisGame : Game
 
         if (cleared > 0)
         {
+            // NOTE(PERE): We need to increment the score before incrementing the
+            // level, since the score is based on the level before the line clear.
+
+            // TODO(PERE): Probably use an array or dictionnary to get the score
+            // based on the number of lines cleared. Evaluate this when implementing
+            // the other scoring mechanics such as t-spins, mini t-spins and back-to-back
+            // difficult line clears.
+            int tmpScore = 100 +
+                           (200 * (cleared - 1)) +
+                           (cleared == 4 ? 100 : 0);
+            _score += tmpScore * _level;
+
             // NOTE(PERE): Every 10 lines we want to increment the level.
             // Multiplying by 0.1 is equivalent as dividing by 10 but is
             // slightly faster.
