@@ -13,6 +13,8 @@
 === Advanced Features === {
 [x] Allow key repeat to move Tetromino left or right while holding down the appropriate key
 [ ] Add animation for cleared lines
+    [ ] Maybe spawn a white rectangle over the whole cleared line and shrink in y while expanding in x
+        Could start with a simple dynamically generated rectangle, maybe with bloom or use a texture.
 [ ] Add animation for lines moving down
 [x] Proper spawning of Tetrominos
     [x] Spawn at top of the matrix (inside hidden rows)
@@ -20,11 +22,13 @@
     [x] If piece is blocked inside invisible rows, then game over
 
 == Randomizer == {
-[ ] Proper 35-bag randomizer with 6 rolls
-[ ] Proper 7-bag randomizer?
-[ ] Add a randomizer with a 4 piece history (with configuration in options)?
-    [ ] Try 4 or 6 times before returning the piece even if it is the same as the last
-[ ] Prevent the first piece from being a Z, S or O?
+[x] 7-bag randomizer (https://tetris.wiki/Random_Generator)
+[ ] True random (like NES)
+[ ] 35-bag randomizer (like TGM3 - https://tetris.wiki/TGM_randomizer)
+[ ] Randomizer with a 4 piece history (like TGM - https://tetris.wiki/TGM_randomizer)
+    [ ] Try 4 times before returning the piece even if it is the same as the last after 4 tries
+    [ ] Prevent the first piece from being a Z, S or O?
+    [ ] Configuration for 4 or 6 slot history
 }
 
 == UI == {
