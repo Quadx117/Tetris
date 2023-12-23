@@ -78,7 +78,7 @@
     [ ] Out of left well kick - If a tetromino is in a well, it can be rotated out
 [ ] Spawn delay (ARE)
 [x] Draw ghost piece
-[ ] Combo counter
+[x] Combo counter
     The combo counter starts at -1.
     For each placed piece that clears at least one line, the combo counter increases by 1.
     If a placed piece does not clear a line, the counter resets back to -1.
@@ -95,7 +95,7 @@
     [ ] T-Spin Double = 1200 * level <difficult>
     [ ] T-Spin Triple = 1600 * level <difficult>
     [ ] Back-to-Back <difficult> line clears = Action score * 1.5 (excluding soft drop and hard drop)
-    [ ] Combo = 50 * combo count * level
+    [x] Combo = 50 * combo count * level
     [ ] Perfect clears (score to add to the regular line clear)
 	    [ ] Single-line perfect clear = 800 * level
         [ ] Double-line perfect clear = 1200 * level

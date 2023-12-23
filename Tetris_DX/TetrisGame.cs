@@ -98,6 +98,7 @@ public class TetrisGame : Game
     private int _score;
     private int _lines;
     private int _level = 1;
+    private int _comboCount = -1;
 
     // Font resources
     private SpriteFont _fontNormal;
@@ -248,8 +249,10 @@ public class TetrisGame : Game
                 _blockQueue.Reset();
                 _heldBlock = null;
                 CurrentBlock = _blockQueue.Dequeue();
+                _score = 0;
                 _lines = 0;
                 _level = 1;
+                _comboCount = -1;
                 _dropSpeed = TimeSpan.FromSeconds(1);
                 _gameOver = false;
             }
@@ -699,6 +702,9 @@ public class TetrisGame : Game
             // NOTE(PERE): We need to increment the score before incrementing the
             // level, since the score is based on the level before the line clear.
 
+            ++_comboCount;
+            _score += 50 * _comboCount * _level;
+
             // TODO(PERE): Probably use an array or dictionnary to get the score
             // based on the number of lines cleared. Evaluate this when implementing
             // the other scoring mechanics such as t-spins, mini t-spins and back-to-back
@@ -714,6 +720,10 @@ public class TetrisGame : Game
             _level = (int)(_lines * 0.1f) + 1;
             float speed = (float)Math.Pow(0.8f - ((_level - 1) * 0.007f), (_level - 1));
             _dropSpeed = TimeSpan.FromSeconds(speed);
+        }
+        else
+        {
+            _comboCount = -1;
         }
 
         CurrentBlock = _blockQueue.Dequeue();
