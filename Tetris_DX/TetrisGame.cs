@@ -714,6 +714,18 @@ public class TetrisGame : Game
                            (cleared == 4 ? 100 : 0);
             _score += tmpScore * _level;
 
+            // Perfect clear bonus
+            if (_gameMatrix.IsEmpty())
+            {
+                // TODO(PERE): It seems odd that the triple-line is worht a bit more
+                // compared to the others, but this is what I found so far on the Tetris
+                // wiki. Should do more research to confirm this without a doubt.
+                int tmpPerfectBonus = (400 * (cleared + 1)) +
+                                      (cleared == 3 ? 200 : 0);
+                _score += tmpPerfectBonus * _level;
+
+            }
+
             // NOTE(PERE): Every 10 lines we want to increment the level.
             // Multiplying by 0.1 is equivalent as dividing by 10 but is
             // slightly faster.

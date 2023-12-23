@@ -96,11 +96,11 @@
     [ ] T-Spin Triple = 1600 * level <difficult>
     [ ] Back-to-Back <difficult> line clears = Action score * 1.5 (excluding soft drop and hard drop)
     [x] Combo = 50 * combo count * level
-    [ ] Perfect clears (score to add to the regular line clear)
-	    [ ] Single-line perfect clear = 800 * level
-        [ ] Double-line perfect clear = 1200 * level
-        [ ] Triple-line perfect clear = 1800 * level
-        [ ] Tetris perfect clear = 2000 * level
+    [*] Perfect clears (score to add to the regular line clear)
+	    [x] Single-line perfect clear = 800 * level
+        [x] Double-line perfect clear = 1200 * level
+        [x] Triple-line perfect clear = 1800 * level
+        [x] Tetris perfect clear = 2000 * level
         [ ] Back-to-back Tetris perfect clear = 3200 * level
     [x] Soft drop = 1 per cell
     [x] Hard drop = 2 per cell

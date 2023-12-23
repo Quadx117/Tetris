@@ -29,6 +29,26 @@ internal class GameMatrix
                p.Y >= 0 && p.Y < RowCount;
     }
 
+    /// <summary>
+    /// Returns <c>true</c> if the matrix is completely empty, <c>false</c> otherwise.
+    /// </summary>
+    /// <returns><c>true</c> if the matrix is completely empty, <c>false</c> otherwise.</returns>
+    public bool IsEmpty()
+    {
+        for (int rowIndex = 0; rowIndex < RowCount; rowIndex++)
+        {
+            for (int columnIndex = 0; columnIndex < ColumnCount; columnIndex++)
+            {
+                if (_grid[rowIndex, columnIndex] != BlockType.None)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     public bool IsEmpty(Point p)
     {
         return IsInsideMatrix(p) &&
