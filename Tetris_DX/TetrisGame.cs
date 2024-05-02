@@ -1,4 +1,5 @@
 ﻿namespace Tetris_DX;
+
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -11,8 +12,10 @@ public class TetrisGame : Game
 {
     private readonly GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
+    private readonly InputManager _input;
 
     private bool _gameOver;
+
     /// <summary>
     /// Used to draw basic shapes with any color, such as the background
     /// rectangle under the score and other info.
@@ -79,14 +82,10 @@ public class TetrisGame : Game
     private bool _canHold = true;
     private readonly BlockQueue _blockQueue = new();
 
-    // TODO(PERE): Create a PlayerController class and handle keyboard,
-    // gamepad and maybe mouse controls
-    private KeyboardState oldKeyboardState = Keyboard.GetState();
-    private KeyboardState newKeyboardState;
     private int _softDropMultiplier = 1;
     private readonly TimeSpan _autoRepeatDelay = TimeSpan.FromMilliseconds(250);
     private readonly TimeSpan _autoRepeatRate = TimeSpan.FromMilliseconds(50);
-    private TimeSpan _elapsedSinceLastAutoRepeat = TimeSpan.FromMilliseconds(50);
+    private TimeSpan _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
     private MovementDirection _movementDirection = MovementDirection.None;
 
     private Texture2D BackgroundTexture { get; set; }
@@ -137,6 +136,8 @@ public class TetrisGame : Game
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
+
+        _input = new InputManager();
 
         _gameMatrix = new GameMatrix(22, 10);
         _tiles = new Texture2D[8];
@@ -231,19 +232,19 @@ public class TetrisGame : Game
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
-            Keyboard.GetState().IsKeyDown(Keys.Escape))
+        _input.Update();
+
+        if (_input.IsButtonTransitionDown(Buttons.Back) ||
+            _input.IsKeyTransitionDown(Keys.Escape))
         {
             Exit();
         }
 
-        newKeyboardState = Keyboard.GetState();
-
         // TODO(PERE): Use a SceneGraph/SceneManager?
         if (_gameOver)
         {
-            if (KeyDown(Keys.Space) ||
-                KeyDown(Keys.Enter))
+            if (_input.IsKeyTransitionDown(Keys.Space) ||
+                _input.IsKeyTransitionDown(Keys.Enter))
             {
                 _gameMatrix.Reset();
                 _blockQueue.Reset();
@@ -259,39 +260,39 @@ public class TetrisGame : Game
         }
         else
         {
-            if (KeyDown(Keys.Left))
+            if (_input.IsKeyTransitionDown(Keys.Left))
             {
                 _movementDirection = MovementDirection.Left;
                 _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
             }
-            else if (KeyDown(Keys.Right))
+            else if (_input.IsKeyTransitionDown(Keys.Right))
             {
                 _movementDirection = MovementDirection.Right;
                 _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
             }
 
             if (_movementDirection == MovementDirection.Left &&
-                KeyUp(Keys.Left) &&
-                KeyPressed(Keys.Right))
+                _input.IsKeyTransitionUp(Keys.Left) &&
+                _input.IsKeyHeld(Keys.Right))
             {
                 _movementDirection = MovementDirection.Right;
                 _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
             }
             else if (_movementDirection == MovementDirection.Right &&
-                     KeyUp(Keys.Right) &&
-                     KeyPressed(Keys.Left))
+                     _input.IsKeyTransitionUp(Keys.Right) &&
+                     _input.IsKeyHeld(Keys.Left))
             {
                 _movementDirection = MovementDirection.Left;
                 _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
             }
 
             if (_movementDirection == MovementDirection.Left &&
-                KeyPressed(Keys.Left))
+                _input.IsKeyHeld(Keys.Left))
             {
                 _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
             }
             else if (_movementDirection == MovementDirection.Right &&
-                     KeyPressed(Keys.Right))
+                     _input.IsKeyHeld(Keys.Right))
             {
                 _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
             }
@@ -329,7 +330,7 @@ public class TetrisGame : Game
                 }
             }
 
-            if (KeyDown(Keys.Up))
+            if (_input.IsKeyTransitionDown(Keys.Up))
             {
                 CurrentBlock.RotateCW();
                 if (!BlockFits())
@@ -337,7 +338,7 @@ public class TetrisGame : Game
                     CurrentBlock.RotateCCW();
                 }
             }
-            else if (KeyDown(Keys.Z))
+            else if (_input.IsKeyTransitionDown(Keys.Z))
             {
                 CurrentBlock.RotateCCW();
                 if (!BlockFits())
@@ -346,16 +347,16 @@ public class TetrisGame : Game
                 }
             }
 
-            if (KeyDown(Keys.Down))
+            if (_input.IsKeyTransitionDown(Keys.Down))
             {
                 _softDropMultiplier = 20;
             }
-            else if (KeyUp(Keys.Down))
+            else if (_input.IsKeyTransitionUp(Keys.Down))
             {
                 _softDropMultiplier = 1;
             }
 
-            if (KeyDown(Keys.Space))
+            if (_input.IsKeyTransitionDown(Keys.Space))
             {
                 do
                 {
@@ -368,7 +369,7 @@ public class TetrisGame : Game
                 LockDownBlock();
             }
 
-            if (KeyDown(Keys.C) &&
+            if (_input.IsKeyTransitionDown(Keys.C) &&
                 _canHold)
             {
                 BlockBase tmp = _heldBlock;
@@ -420,8 +421,6 @@ public class TetrisGame : Game
                 }
             }
         }
-
-        oldKeyboardState = newKeyboardState;
 
         base.Update(gameTime);
     }
@@ -740,48 +739,6 @@ public class TetrisGame : Game
 
         CurrentBlock = _blockQueue.Dequeue();
         _canHold = true;
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if the key is being pressed, <c>false</c> otherwise.
-    /// </summary>
-    /// <remarks>
-    /// A key is considered being pressed only if its previous state was also pressed.
-    /// Use <see cref="KeyDown(KeyboardState, Keys)"/> to know if the key transitioned
-    /// from up to down.
-    /// </remarks>
-    /// <param name="newKeyboardState">The current state of the keyboard.</param>
-    /// <param name="key">The key to evaluate.</param>
-    /// <returns><c>true</c> if the key is being pressed, <c>false</c> otherwise.</returns>
-    private bool KeyPressed(Keys key)
-    {
-        bool result = oldKeyboardState.IsKeyDown(key) && newKeyboardState.IsKeyDown(key);
-
-        return result;
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if the key transitioned from up to down, <c>false</c> otherwise.
-    /// </summary>
-    /// <param name="key">The key to evaluate.</param>
-    /// <returns><c>true</c> if the key transitioned from up to down, <c>false</c> otherwise.</returns>
-    private bool KeyDown(Keys key)
-    {
-        bool result = oldKeyboardState.IsKeyUp(key) && newKeyboardState.IsKeyDown(key);
-
-        return result;
-    }
-
-    /// <summary>
-    /// Returns <c>true</c> if the key transitioned from down to up, <c>false</c> otherwise.
-    /// </summary>
-    /// <param name="key">The key to evaluate.</param>
-    /// <returns><c>true</c> if the key transitioned from down to up, <c>false</c> otherwise.</returns>
-    private bool KeyUp(Keys key)
-    {
-        bool result = oldKeyboardState.IsKeyDown(key) && newKeyboardState.IsKeyUp(key);
-
-        return result;
     }
 }
 

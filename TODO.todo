@@ -126,9 +126,12 @@
     [x] Make sure to not lock the piece in mid-air if we triggered the lockdown
         timer and we then moved the piece to a position where it can continue to
         move down.
-[ ] Input Manager
-    [ ] Add missing keyboard keybindings
+[*] Input Manager
     [ ] Add controller support
+    [ ] Create different managers based on context
+        For example, the TetrisInputManager would be responsible for gameplay and would contain
+        actions such as HardDrop, SoftDrop, etc. while the MenuInputController would be used
+        when inside a menu and would contain actions such as MenuUp, MenuDown, MenuBack, etc.
 }
 
 == Polish == {
