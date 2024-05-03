@@ -15,6 +15,7 @@ public class TetrisGame : Game
     private readonly InputManager _input;
 
     private bool _gameOver;
+    private bool _isPaused;
 
     /// <summary>
     /// Used to draw basic shapes with any color, such as the background
@@ -234,10 +235,18 @@ public class TetrisGame : Game
     {
         _input.Update();
 
+        // TODO(PERE): Exiting the game will go into the pause menu once I add
+        // the different screens to the game.
         if (_input.IsButtonTransitionDown(Buttons.Back) ||
             _input.IsKeyTransitionDown(Keys.Escape))
         {
             Exit();
+        }
+
+        if (!_gameOver &&
+            _input.IsPauseGame())
+        {
+            _isPaused = !_isPaused;
         }
 
         // TODO(PERE): Use a SceneGraph/SceneManager?
@@ -258,7 +267,7 @@ public class TetrisGame : Game
                 _gameOver = false;
             }
         }
-        else
+        else if (!_isPaused)
         {
             if (_input.IsKeyTransitionDown(Keys.Left))
             {
@@ -438,11 +447,22 @@ public class TetrisGame : Game
                           _playingAreaOrigin,
                           Color.White);
         DrawMatrix();
-        DrawNextTetromino();
-        DrawHeldTetromino();
         DrawInfoPanel();
 
-        if (_gameOver)
+        if (_isPaused)
+        {
+            // TODO(PERE): Calculate center by measuring the string
+            // TODO(PERE): Use a bigger font for the "PAUSED" text
+            // TODO(PERE): The todo's above aren't done since this is
+            // temporary and should be replaced by a proper popup screen
+            // with buttons to continue or quit.
+            _spriteBatch.DrawString(_fontTitle,
+                                    "PAUSED",
+                                    new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 37,
+                                                (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
+                                    Color.White);
+        }
+        else if (_gameOver)
         {
             _spriteBatch.Draw(pixel,
                               new Rectangle(0,
@@ -464,6 +484,8 @@ public class TetrisGame : Game
         }
         else
         {
+            DrawNextTetromino();
+            DrawHeldTetromino();
             DrawCurrentBlockGhost();
             DrawCurrentBlock();
         }

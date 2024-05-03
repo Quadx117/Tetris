@@ -196,8 +196,7 @@ public class InputManager
     /// <c>false</c> otherwise.</returns>
     public bool IsPauseGame()
     {
-        return IsKeyTransitionDown(Keys.Escape) ||
-               IsButtonTransitionDown(Buttons.Back) ||
+        return IsKeyTransitionDown(Keys.P) ||
                IsButtonTransitionDown(Buttons.Start);
     }
 }
