@@ -514,7 +514,7 @@ public class TetrisGame : Game
 
     private void DrawCurrentBlockGhost()
     {
-        int ghostOffset = GetGhostOffet();
+        int ghostOffset = GetGhostOffset();
         if (ghostOffset > 0)
         {
             foreach (Point p in CurrentBlock.TilePositions())
@@ -670,7 +670,7 @@ public class TetrisGame : Game
     /// The Y offset at which to draw the ghost Tetromino based on the current
     /// Tetromino position.
     /// </returns>
-    private int GetGhostOffet()
+    private int GetGhostOffset()
     {
         int result = 0;
 
