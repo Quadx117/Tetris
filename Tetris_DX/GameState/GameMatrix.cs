@@ -1,4 +1,4 @@
-﻿namespace Tetris_DX.Components;
+﻿namespace Tetris_DX.GameState;
 
 using Microsoft.Xna.Framework;
 using Tetris_DX.Blocks;

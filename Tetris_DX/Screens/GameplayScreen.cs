@@ -6,23 +6,29 @@ using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Tetris_DX.Blocks;
-using Tetris_DX.Components;
 using Tetris_DX.GameState;
+using Tetris_DX.ScreenManagement;
 
-public class GameplayScreen
+/// <summary>
+/// This screen implements the actual game logic.
+/// </summary>
+public class GameplayScreen : GameScreen
 {
     private readonly GraphicsDeviceManager _graphics;
-    private readonly SpriteBatch _spriteBatch;
-    private readonly InputManager _input;
+    private readonly GraphicsDevice _graphicsDevice;
+    private readonly ContentManager _content;
 
     private bool _gameOver;
     private bool _isPaused;
+    private bool _hardDrop;
+    private bool _hold;
+    private bool _autoRepeatMovement;
 
     /// <summary>
     /// Used to draw basic shapes with any color, such as the background
     /// rectangle under the score and other info.
     /// </summary>
-    private Texture2D pixel;
+    private Texture2D _pixel;
 
     private readonly GameMatrix _gameMatrix;
 
@@ -71,12 +77,15 @@ public class GameplayScreen
     private Rectangle _previewPanelDest;
     private Rectangle _heldPanelDest;
 
+    /// <summary>
+    /// Amount of time elapsed since we last moved the Tetromino down by one row.
+    /// </summary>
     private TimeSpan _elapsed = TimeSpan.Zero;
 
     /// <summary>
     /// Amount of time before the piece moves down by one row
     /// </summary>
-    private TimeSpan _dropSpeed = TimeSpan.FromSeconds(1);
+    private TimeSpan _dropInterval = TimeSpan.FromSeconds(1);
 
     /// <summary>
     /// Amount of time before the piece is locked in place.
@@ -88,11 +97,12 @@ public class GameplayScreen
     private bool _canHold = true;
     private readonly BlockQueue _blockQueue = new();
 
-    private int _softDropMultiplier = 1;
+    private int _softDropSpeedMultiplier = 1;
     private readonly TimeSpan _autoRepeatDelay = TimeSpan.FromMilliseconds(250);
     private readonly TimeSpan _autoRepeatRate = TimeSpan.FromMilliseconds(50);
     private TimeSpan _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
     private MovementDirection _movementDirection = MovementDirection.None;
+    private RotationDirection _rotationDirection = RotationDirection.None;
 
     private Texture2D BackgroundTexture { get; set; }
 
@@ -138,12 +148,16 @@ public class GameplayScreen
         }
     }
 
-    public GameplayScreen(GraphicsDeviceManager graphics, GraphicsDevice graphicsDevice)
+    public GameplayScreen(GraphicsDeviceManager graphics,
+                          GraphicsDevice graphicsDevice,
+                          ContentManager content)
     {
         _graphics = graphics;
+        _graphicsDevice = graphicsDevice;
+        _content = content;
 
-        _spriteBatch = new SpriteBatch(graphicsDevice);
-        _input = new InputManager();
+        TransitionOnTime = TimeSpan.FromSeconds(1.5);
+        TransitionOffTime = TimeSpan.FromSeconds(0.5);
 
         _gameMatrix = new GameMatrix(22, 10);
         _tiles = new Texture2D[8];
@@ -160,37 +174,38 @@ public class GameplayScreen
                                     (_graphics.PreferredBackBufferHeight - playingAreaHeight) / 2);
         _matrixOrigin = _matrixVisibleOrigin - new Vector2(0, 2 * _cellSize.Y);
         _playingAreaOrigin = _matrixVisibleOrigin - Vector2.One;
-
     }
 
-    public void LoadContent(GraphicsDevice graphicsDevice, ContentManager content)
+    public override void LoadContent()
     {
-        pixel = new Texture2D(graphicsDevice, 1, 1, false, SurfaceFormat.Color);
-        pixel.SetData(new[] { Color.White }); // So we can draw whatever color we want
+        // TODO(PERE): Add a property in ScreenManager and use this, like for Font
+        // if we still need to do custom drawing.
+        _pixel = new Texture2D(_graphicsDevice, 1, 1, false, SurfaceFormat.Color);
+        _pixel.SetData(new[] { Color.White }); // So we can draw whatever color we want
 
-        BackgroundTexture = content.Load<Texture2D>(@"Images\Background");
-        PlayingAreaTexture = content.Load<Texture2D>(@"Images\PlayingArea");
+        BackgroundTexture = _content.Load<Texture2D>(@"Images\Background");
+        PlayingAreaTexture = _content.Load<Texture2D>(@"Images\PlayingArea");
 
-        _tiles[0] = content.Load<Texture2D>(@"Images\TileEmpty");
-        _tiles[1] = content.Load<Texture2D>(@"Images\TileCyan");
-        _tiles[2] = content.Load<Texture2D>(@"Images\TileBlue");
-        _tiles[3] = content.Load<Texture2D>(@"Images\TileOrange");
-        _tiles[4] = content.Load<Texture2D>(@"Images\TileYellow");
-        _tiles[5] = content.Load<Texture2D>(@"Images\TileGreen");
-        _tiles[6] = content.Load<Texture2D>(@"Images\TilePurple");
-        _tiles[7] = content.Load<Texture2D>(@"Images\TileRed");
+        _tiles[0] = _content.Load<Texture2D>(@"Images\TileEmpty");
+        _tiles[1] = _content.Load<Texture2D>(@"Images\TileCyan");
+        _tiles[2] = _content.Load<Texture2D>(@"Images\TileBlue");
+        _tiles[3] = _content.Load<Texture2D>(@"Images\TileOrange");
+        _tiles[4] = _content.Load<Texture2D>(@"Images\TileYellow");
+        _tiles[5] = _content.Load<Texture2D>(@"Images\TileGreen");
+        _tiles[6] = _content.Load<Texture2D>(@"Images\TilePurple");
+        _tiles[7] = _content.Load<Texture2D>(@"Images\TileRed");
 
-        _blocks[0] = content.Load<Texture2D>(@"Images\Block-Empty");
-        _blocks[1] = content.Load<Texture2D>(@"Images\Block-I");
-        _blocks[2] = content.Load<Texture2D>(@"Images\Block-J");
-        _blocks[3] = content.Load<Texture2D>(@"Images\Block-L");
-        _blocks[4] = content.Load<Texture2D>(@"Images\Block-O");
-        _blocks[5] = content.Load<Texture2D>(@"Images\Block-S");
-        _blocks[6] = content.Load<Texture2D>(@"Images\Block-T");
-        _blocks[7] = content.Load<Texture2D>(@"Images\Block-Z");
+        _blocks[0] = _content.Load<Texture2D>(@"Images\Block-Empty");
+        _blocks[1] = _content.Load<Texture2D>(@"Images\Block-I");
+        _blocks[2] = _content.Load<Texture2D>(@"Images\Block-J");
+        _blocks[3] = _content.Load<Texture2D>(@"Images\Block-L");
+        _blocks[4] = _content.Load<Texture2D>(@"Images\Block-O");
+        _blocks[5] = _content.Load<Texture2D>(@"Images\Block-S");
+        _blocks[6] = _content.Load<Texture2D>(@"Images\Block-T");
+        _blocks[7] = _content.Load<Texture2D>(@"Images\Block-Z");
 
-        _fontNormal = content.Load<SpriteFont>("Fonts/Game/normal");
-        _fontTitle = content.Load<SpriteFont>("Fonts/Game/title");
+        _fontNormal = _content.Load<SpriteFont>("Fonts/Game/normal");
+        _fontTitle = _content.Load<SpriteFont>("Fonts/Game/title");
 
         // TODO(PERE): This doesn't feel like the best place for it, but textures
         // aren't yet loaded in the constructor.
@@ -225,84 +240,142 @@ public class GameplayScreen
                           (int)(heldPanelSize.Y));
     }
 
-    public void Update(GameTime gameTime)
+    public override void UnloadContent()
     {
-        _input.Update();
+        // TODO(PERE): Should we unload the game's content here?
+    }
 
-        // TODO(PERE): Exiting the game will go into the pause menu once I add
-        // the different screens to the game.
-        //if (_input.IsButtonTransitionDown(Buttons.Back) ||
-        //    _input.IsKeyTransitionDown(Keys.Escape))
-        //{
-        //    Exit();
-        //}
+    public override void HandleInput(InputManager input)
+    {
+        GamePadState gamePadState = input.CurrentGamePadState;
+
+        // The game pauses either if the user presses the pause button, or if
+        // they unplug the active gamepad. This requires us to keep track of
+        // whether a gamepad was ever plugged in, because we don't want to pause
+        // on PC if they are playing with a keyboard and have no gamepad at all!
+        bool gamePadDisconnected = !gamePadState.IsConnected &&
+                                   input.GamePadWasConnected;
 
         if (!_gameOver &&
-            _input.IsPauseGame())
+            (input.IsPauseGame() || gamePadDisconnected))
         {
             _isPaused = !_isPaused;
+            // TODO(PERE): This is temporary and makes sure we stay paused if 
+            // the gampepad disconnected
+            _isPaused |= gamePadDisconnected;
+        }
+        else
+        {
+            // TODO(PERE): Exiting the game will go into the pause menu once I add
+            // the different screens to the game.
+            //if (_input.IsButtonTransitionDown(Buttons.Back) ||
+            //    _input.IsKeyTransitionDown(Keys.Escape))
+            //{
+            //    Exit();
+            //}
+
+            // TODO(PERE): Temporary code that will go inside the GameOver screen
+            if (_gameOver)
+            {
+                if (input.IsKeyTransitionDown(Keys.Space) ||
+                    input.IsKeyTransitionDown(Keys.Enter))
+                {
+                    _gameMatrix.Reset();
+                    _blockQueue.Reset();
+                    _heldBlock = null;
+                    CurrentBlock = _blockQueue.Dequeue();
+                    _score = 0;
+                    _lines = 0;
+                    _level = 1;
+                    _comboCount = -1;
+                    _dropInterval = TimeSpan.FromSeconds(1);
+                    _gameOver = false;
+
+                    // NOTE(PERE): Locking down the final block already resset
+                    // these 2 fields, but there is no harm in doing it again.
+                    _canHold = true;
+                    _elapsed = TimeSpan.Zero;
+                }
+            }
+            // TODO(PERE): Temporary if since once we have a proper pause screen,
+            // we won't be handling input in this screen when the game is paused.
+            else if (!_isPaused)
+            {
+                // NOTE(PERE): Pressing both left and right at the same time is
+                // only possible when using a keyboard and getting the timing
+                // right so that it happens inside the same update is almost
+                // impossible. If it were to happen, we choose to prioritize
+                // going left.
+                if (input.IsKeyTransitionDown(Keys.Left) ||
+                    (input.IsKeyHeld(Keys.Left) &&
+                     input.IsKeyTransitionUp(Keys.Right)))
+                {
+                    _movementDirection = MovementDirection.Left;
+                    _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+                }
+                else if (input.IsKeyTransitionDown(Keys.Right) ||
+                         (input.IsKeyHeld(Keys.Right) &&
+                          input.IsKeyTransitionUp(Keys.Left)))
+                {
+                    _movementDirection = MovementDirection.Right;
+                    _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
+                }
+
+                _autoRepeatMovement = (_movementDirection == MovementDirection.Left &&
+                                       input.IsKeyHeld(Keys.Left)) ||
+                                      (_movementDirection == MovementDirection.Right &&
+                                       input.IsKeyHeld(Keys.Right));
+
+                _rotationDirection = input.IsKeyTransitionDown(Keys.Up)
+                                         ? RotationDirection.Clockwise
+                                         : input.IsKeyTransitionDown(Keys.Z)
+                                             ? RotationDirection.CounterClockwise
+                                             : RotationDirection.None;
+
+                if (input.IsKeyTransitionDown(Keys.Down))
+                {
+                    _softDropSpeedMultiplier = 20;
+                }
+                else if (input.IsKeyTransitionUp(Keys.Down))
+                {
+                    _softDropSpeedMultiplier = 1;
+                }
+
+                _hardDrop = input.IsKeyTransitionDown(Keys.Space);
+
+                // TODO(PERE): Add debug info to see timings like elapsed
+                // time since last drop, etc. It seems a bit long before
+                // the piece goes down by one row after holding a piece.
+                _hold = input.IsKeyTransitionDown(Keys.C) &&
+                        _canHold;
+            }
+        }
+    }
+
+    public override void Update(GameTime gameTime,
+                                bool otherScreenHasFocus,
+                                bool coveredByOtherScreen)
+    {
+        base.Update(gameTime, otherScreenHasFocus, coveredByOtherScreen);
+
+        // TODO(PERE): Validate if this is needed and OK to return.
+        if (!IsActive)
+        {
+            // NOTE(PERE): We don't need to update this screen if it is not active.
+            return;
         }
 
-        // TODO(PERE): Use a SceneGraph/SceneManager?
-        if (_gameOver)
+        // TODO(PERE): Do we need this VS !IsActive above.
+        if (!_isPaused)
         {
-            if (_input.IsKeyTransitionDown(Keys.Space) ||
-                _input.IsKeyTransitionDown(Keys.Enter))
-            {
-                _gameMatrix.Reset();
-                _blockQueue.Reset();
-                _heldBlock = null;
-                CurrentBlock = _blockQueue.Dequeue();
-                _score = 0;
-                _lines = 0;
-                _level = 1;
-                _comboCount = -1;
-                _dropSpeed = TimeSpan.FromSeconds(1);
-                _gameOver = false;
-            }
-        }
-        else if (!_isPaused)
-        {
-            if (_input.IsKeyTransitionDown(Keys.Left))
-            {
-                _movementDirection = MovementDirection.Left;
-                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-            }
-            else if (_input.IsKeyTransitionDown(Keys.Right))
-            {
-                _movementDirection = MovementDirection.Right;
-                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-            }
-
-            if (_movementDirection == MovementDirection.Left &&
-                _input.IsKeyTransitionUp(Keys.Left) &&
-                _input.IsKeyHeld(Keys.Right))
-            {
-                _movementDirection = MovementDirection.Right;
-                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-            }
-            else if (_movementDirection == MovementDirection.Right &&
-                     _input.IsKeyTransitionUp(Keys.Right) &&
-                     _input.IsKeyHeld(Keys.Left))
-            {
-                _movementDirection = MovementDirection.Left;
-                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-            }
-
-            if (_movementDirection == MovementDirection.Left &&
-                _input.IsKeyHeld(Keys.Left))
-            {
-                _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
-            }
-            else if (_movementDirection == MovementDirection.Right &&
-                     _input.IsKeyHeld(Keys.Right))
+            if (_autoRepeatMovement)
             {
                 _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
             }
 
             // NOTE(PERE): If we pressed left or right, then _elapsedSinceLastAutoRepeat
             // will be 0 so we know we want to move the Tetromino in that case. Otherwise,
-            // we wait for the appropirate amount of time before auto-repeating the move.
+            // we wait for the appropriate amount of time before auto-repeating the move.
             if (_elapsedSinceLastAutoRepeat == TimeSpan.Zero ||
                 _elapsedSinceLastAutoRepeat > _autoRepeatDelay)
             {
@@ -311,6 +384,10 @@ public class GameplayScreen
                     _elapsedSinceLastAutoRepeat -= _autoRepeatRate;
                 }
 
+                // TODO(PERE): We can't set _movementDirection to None with the
+                // current logic, since we rely on knowing what was the last
+                // direction we were moving to determine if we want to auto repeat.
+                // This should be improved as it is not easy to work with.
                 switch (_movementDirection)
                 {
                     case MovementDirection.None:
@@ -333,34 +410,43 @@ public class GameplayScreen
                 }
             }
 
-            if (_input.IsKeyTransitionDown(Keys.Up))
+            switch (_rotationDirection)
             {
-                CurrentBlock.RotateCW();
-                if (!BlockFits())
-                {
-                    CurrentBlock.RotateCCW();
-                }
-            }
-            else if (_input.IsKeyTransitionDown(Keys.Z))
-            {
-                CurrentBlock.RotateCCW();
-                if (!BlockFits())
-                {
+                case RotationDirection.None:
+                    // Nothing to do.
+                    break;
+                case RotationDirection.Clockwise:
                     CurrentBlock.RotateCW();
-                }
+                    if (!BlockFits())
+                    {
+                        CurrentBlock.RotateCCW();
+                    }
+                    break;
+                case RotationDirection.CounterClockwise:
+                    CurrentBlock.RotateCCW();
+                    if (!BlockFits())
+                    {
+                        CurrentBlock.RotateCW();
+                    }
+                    break;
             }
 
-            if (_input.IsKeyTransitionDown(Keys.Down))
+            // NOTE(PERE): If the player ever manages to issue both a hold and
+            // a hard drop action, we favor the hold action over the hard drop.
+            if (_hold)
             {
-                _softDropMultiplier = 20;
+                BlockBase tmp = _heldBlock;
+                _heldBlock = CurrentBlock;
+                CurrentBlock = tmp ?? _blockQueue.Dequeue();
+                _canHold = false;
+                _elapsed = TimeSpan.Zero;
+                _lockingDown = false;
+                _hardDrop = false;
             }
-            else if (_input.IsKeyTransitionUp(Keys.Down))
+            else if (_hardDrop)
             {
-                _softDropMultiplier = 1;
-            }
+                _hardDrop = false;
 
-            if (_input.IsKeyTransitionDown(Keys.Space))
-            {
                 do
                 {
                     CurrentBlock.MoveDown();
@@ -371,43 +457,32 @@ public class GameplayScreen
                 _score -= 2;
                 LockDownBlock();
             }
-
-            if (_input.IsKeyTransitionDown(Keys.C) &&
-                _canHold)
+            else if (_lockingDown)
             {
-                BlockBase tmp = _heldBlock;
-                _heldBlock = CurrentBlock;
-                CurrentBlock = tmp ?? _blockQueue.Dequeue();
-                _canHold = false;
-            }
-
-            if (_lockingDown)
-            {
-                // TODO(PERE): Use the same variable (_elapsed) for the _lockDownDelay?
-                // Rename _elapsed if it's only used for fallig blocks.
-                _elapsed = TimeSpan.Zero;
-                if (_lockDownDelay.TotalMilliseconds <= 0)
+                // Try to move down one last time in case the player moved the piece sideways
+                CurrentBlock.MoveDown();
+                if (BlockFits())
                 {
-                    // Try to move down one last time in case the player moved the piece
-                    CurrentBlock.MoveDown();
-                    if (!BlockFits())
-                    {
-                        CurrentBlock.MoveUp();
-                        LockDownBlock();
-                    }
-
                     _lockDownDelay = TimeSpan.FromSeconds(0.5);
                     _lockingDown = false;
                 }
                 else
                 {
+                    CurrentBlock.MoveUp();
                     _lockDownDelay = _lockDownDelay.Subtract(gameTime.ElapsedGameTime);
+                }
+
+                if (_lockDownDelay.TotalMilliseconds <= 0)
+                {
+                    LockDownBlock();
+                    _lockDownDelay = TimeSpan.FromSeconds(0.5);
+                    _lockingDown = false;
                 }
             }
             else
             {
-                _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropMultiplier));
-                if (_elapsed.TotalMilliseconds > _dropSpeed.TotalMilliseconds)
+                _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropSpeedMultiplier));
+                if (_elapsed.TotalMilliseconds > _dropInterval.TotalMilliseconds)
                 {
                     CurrentBlock.MoveDown();
                     if (!BlockFits())
@@ -415,29 +490,31 @@ public class GameplayScreen
                         CurrentBlock.MoveUp();
                         _lockingDown = true;
                     }
-                    else if (_softDropMultiplier > 1)
+                    else if (_softDropSpeedMultiplier > 1)
                     {
                         _score += 1;
                     }
 
-                    _elapsed = _elapsed.Subtract(_dropSpeed);
+                    _elapsed = _elapsed.Subtract(_dropInterval);
                 }
             }
         }
     }
 
-    public void Draw()
+    public override void Draw(GameTime gameTime)
     {
-        _spriteBatch.Begin();
+        SpriteBatch spriteBatch = ScreenManager.SpriteBatch;
 
-        _spriteBatch.Draw(BackgroundTexture,
-                          _graphics.GraphicsDevice.Viewport.Bounds,
-                          Color.White);
-        _spriteBatch.Draw(PlayingAreaTexture,
-                          _playingAreaOrigin,
-                          Color.White);
-        DrawMatrix();
-        DrawInfoPanel();
+        spriteBatch.Begin();
+
+        spriteBatch.Draw(BackgroundTexture,
+                         _graphics.GraphicsDevice.Viewport.Bounds,
+                         Color.White);
+        spriteBatch.Draw(PlayingAreaTexture,
+                         _playingAreaOrigin,
+                         Color.White);
+        DrawMatrix(spriteBatch);
+        DrawInfoPanel(spriteBatch);
 
         if (_isPaused)
         {
@@ -446,44 +523,44 @@ public class GameplayScreen
             // TODO(PERE): The todo's above aren't done since this is
             // temporary and should be replaced by a proper popup screen
             // with buttons to continue or quit.
-            _spriteBatch.DrawString(_fontTitle,
-                                    "PAUSED",
-                                    new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 37,
-                                                (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
-                                    Color.White);
+            spriteBatch.DrawString(_fontTitle,
+                                   "PAUSED",
+                                   new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 37,
+                                               (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
+                                   Color.White);
         }
         else if (_gameOver)
         {
-            _spriteBatch.Draw(pixel,
-                              new Rectangle(0,
-                                            0,
-                                            _graphics.PreferredBackBufferWidth,
-                                            _graphics.PreferredBackBufferHeight),
-                              Color.Black * 0.6f);
+            spriteBatch.Draw(_pixel,
+                             new Rectangle(0,
+                                           0,
+                                           _graphics.PreferredBackBufferWidth,
+                                           _graphics.PreferredBackBufferHeight),
+                             Color.Black * 0.6f);
 
             // TODO(PERE): Calculate center by measuring the string
             // TODO(PERE): Use a bigger font for the "GAME OVER" text
             // TODO(PERE): The todo's above aren't done since this is
             // temporary and should be replaced by a proper popup screen
             // with stats and buttons to restart or quit.
-            _spriteBatch.DrawString(_fontTitle,
-                                    "GAME OVER",
-                                    new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 50,
-                                                (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
-                                    Color.White);
+            spriteBatch.DrawString(_fontTitle,
+                                   "GAME OVER",
+                                   new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 50,
+                                               (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
+                                   Color.White);
         }
         else
         {
-            DrawNextTetromino();
-            DrawHeldTetromino();
-            DrawCurrentBlockGhost();
-            DrawCurrentBlock();
+            DrawNextTetromino(spriteBatch);
+            DrawHeldTetromino(spriteBatch);
+            DrawCurrentBlockGhost(spriteBatch);
+            DrawCurrentBlock(spriteBatch);
         }
 
-        _spriteBatch.End();
+        spriteBatch.End();
     }
 
-    private void DrawCurrentBlock()
+    private void DrawCurrentBlock(SpriteBatch spriteBatch)
     {
         foreach (Point p in CurrentBlock.TilePositions())
         {
@@ -493,14 +570,14 @@ public class GameplayScreen
                 Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
                                      (int)_matrixOrigin.Y + (p.Y * _cellSize.Y));
                 Rectangle tileBounds = new(location, _cellSize);
-                _spriteBatch.Draw(_tiles[(int)CurrentBlock.Type],
-                                  tileBounds,
-                                  Color.White);
+                spriteBatch.Draw(_tiles[(int)CurrentBlock.Type],
+                                 tileBounds,
+                                 Color.White);
             }
         }
     }
 
-    private void DrawCurrentBlockGhost()
+    private void DrawCurrentBlockGhost(SpriteBatch spriteBatch)
     {
         int ghostOffset = GetGhostOffset();
         if (ghostOffset > 0)
@@ -513,38 +590,38 @@ public class GameplayScreen
                     Point location = new((int)_matrixOrigin.X + (p.X * _cellSize.X),
                                          (int)_matrixOrigin.Y + ((p.Y + ghostOffset) * _cellSize.Y));
                     Rectangle tileBounds = new(location, _cellSize);
-                    _spriteBatch.Draw(_tiles[(int)CurrentBlock.Type],
-                                      tileBounds,
-                                      Color.White * 0.25f);
+                    spriteBatch.Draw(_tiles[(int)CurrentBlock.Type],
+                                     tileBounds,
+                                     Color.White * 0.25f);
                 }
             }
         }
     }
 
-    private void DrawNextTetromino()
+    private void DrawNextTetromino(SpriteBatch spriteBatch)
     {
         // TODO(PERE): We could "cache" the next Tetromino and update it only
         // after locking down the current piece or after holding the first piece
         // since we know it can't change otherwise. This would be a small optimization
         // though since this is not a demanding game, we will evaluate this idea
         // when we do a better version of the preview window.
-        _spriteBatch.Draw(_blocks[(int)_blockQueue.PeekNextBlockType()],
-                          _previewPanelDest,
-                          Color.White);
+        spriteBatch.Draw(_blocks[(int)_blockQueue.PeekNextBlockType()],
+                         _previewPanelDest,
+                         Color.White);
     }
 
-    private void DrawHeldTetromino()
+    private void DrawHeldTetromino(SpriteBatch spriteBatch)
     {
         // TODO(PERE): We could "cache" the held Tetromino type and update it only
         // after holding a piece since we know it can't change otherwise. This would
         // be a small optimization though since this is not a demanding game.
         BlockType heldType = _heldBlock?.Type ?? BlockType.None;
-        _spriteBatch.Draw(_blocks[(int)heldType],
-                          _heldPanelDest,
-                          Color.White);
+        spriteBatch.Draw(_blocks[(int)heldType],
+                         _heldPanelDest,
+                         Color.White);
     }
 
-    private void DrawMatrix()
+    private void DrawMatrix(SpriteBatch spriteBatch)
     {
         // NOTE(PERE): We skip the first two rows which are meant to be invisible to the player.
         for (int rowIndex = 2; rowIndex < _gameMatrix.RowCount; rowIndex++)
@@ -555,9 +632,9 @@ public class GameplayScreen
                                      (int)_matrixVisibleOrigin.Y + ((rowIndex - 2) * _cellSize.Y));
                 Rectangle tileBounds = new(location, _cellSize);
                 BlockType blockType = _gameMatrix[rowIndex, colIndex];
-                _spriteBatch.Draw(_tiles[(int)blockType],
-                                  tileBounds,
-                                  Color.White);
+                spriteBatch.Draw(_tiles[(int)blockType],
+                                 tileBounds,
+                                 Color.White);
             }
         }
     }
@@ -567,11 +644,11 @@ public class GameplayScreen
     /// <summary>
     /// Draws the score, current level and lines cleared
     /// </summary>
-    private void DrawInfoPanel()
+    private void DrawInfoPanel(SpriteBatch spriteBatch)
     {
-        _spriteBatch.Draw(pixel,
-                          _infoPanelDest,
-                          new Color(0.1f, 0.1f, 0.1f, 0.85f));
+        spriteBatch.Draw(_pixel,
+                         _infoPanelDest,
+                         new Color(0.1f, 0.1f, 0.1f, 0.85f));
 
         // TODO(PERE): See how to best handle this, probably using a Panel
         // class with a Label class or similar which could have margins
@@ -587,10 +664,10 @@ public class GameplayScreen
         // NOTE(PERE): For some reason, numbers don't need the Y adjustment.
         Vector2 labelMargin = new(5f);
         Vector2 titleDest = panelLocation + panelMargin;
-        _spriteBatch.DrawString(_fontTitle,
-                                "SCORE",
-                                titleDest,
-                                Color.White);
+        spriteBatch.DrawString(_fontTitle,
+                               "SCORE",
+                               titleDest,
+                               Color.White);
 
         // TODO(PERE): Calculate the height of the text dynamically VS
         // using "magic" numbers.
@@ -598,56 +675,56 @@ public class GameplayScreen
                                    (int)titleDest.Y + 24,
                                    (int)panelSize.X - ((int)panelMargin.X * 2),
                                    25);
-        _spriteBatch.Draw(pixel,
-                          labelPanel,
-                          Color.Black);
+        spriteBatch.Draw(_pixel,
+                         labelPanel,
+                         Color.Black);
 
         // TODO(PERE): Center text VS right align.
         // TODO(PERE): Make sure we have enough space for the max possible score.
-        _spriteBatch.DrawString(_fontNormal,
-                                $"{_score}",
-                                labelPanel.Location.ToVector2() + labelMargin,
-                                Color.White);
+        spriteBatch.DrawString(_fontNormal,
+                               $"{_score}",
+                               labelPanel.Location.ToVector2() + labelMargin,
+                               Color.White);
 
         titleDest = labelPanel.Location.ToVector2();
         titleDest.Y += labelPanel.Height + panelMargin.Y;
-        _spriteBatch.DrawString(_fontTitle,
-                                "LEVEL",
-                                titleDest,
-                                Color.White);
+        spriteBatch.DrawString(_fontTitle,
+                               "LEVEL",
+                               titleDest,
+                               Color.White);
 
         // TODO(PERE): Calculate the height of the text dynamically VS
         // using "magic" numbers.
         labelPanel.Y = (int)titleDest.Y + 24;
-        _spriteBatch.Draw(pixel,
-                          labelPanel,
-                          Color.Black);
+        spriteBatch.Draw(_pixel,
+                         labelPanel,
+                         Color.Black);
 
         // TODO(PERE): Center text VS right align.
-        _spriteBatch.DrawString(_fontNormal,
-                                $"{_level}",
-                                labelPanel.Location.ToVector2() + labelMargin,
-                                Color.White);
+        spriteBatch.DrawString(_fontNormal,
+                               $"{_level}",
+                               labelPanel.Location.ToVector2() + labelMargin,
+                               Color.White);
 
         titleDest = labelPanel.Location.ToVector2();
         titleDest.Y += labelPanel.Height + panelMargin.Y;
-        _spriteBatch.DrawString(_fontTitle,
-                                "LINES",
-                                titleDest,
-                                Color.White);
+        spriteBatch.DrawString(_fontTitle,
+                               "LINES",
+                               titleDest,
+                               Color.White);
 
         // TODO(PERE): Calculate the height of the text dynamically VS
         // using "magic" numbers.
         labelPanel.Y = (int)titleDest.Y + 24;
-        _spriteBatch.Draw(pixel,
-                          labelPanel,
-                          Color.Black);
+        spriteBatch.Draw(_pixel,
+                         labelPanel,
+                         Color.Black);
 
         // TODO(PERE): Center text VS right align.
-        _spriteBatch.DrawString(_fontNormal,
-                                $"{_lines}",
-                                labelPanel.Location.ToVector2() + labelMargin,
-                                Color.White);
+        spriteBatch.DrawString(_fontNormal,
+                               $"{_lines}",
+                               labelPanel.Location.ToVector2() + labelMargin,
+                               Color.White);
     }
 
     /// <summary>
@@ -702,7 +779,6 @@ public class GameplayScreen
         }
 
         // TODO(PERE): Better clearing with visual feedback
-        // TODO(PERE): Increment score
         int cleared = _gameMatrix.ClearFullRows();
         _lines += cleared;
 
@@ -740,7 +816,7 @@ public class GameplayScreen
             // slightly faster.
             _level = (int)(_lines * 0.1f) + 1;
             float speed = (float)Math.Pow(0.8f - ((_level - 1) * 0.007f), (_level - 1));
-            _dropSpeed = TimeSpan.FromSeconds(speed);
+            _dropInterval = TimeSpan.FromSeconds(speed);
         }
         else
         {
@@ -749,5 +825,6 @@ public class GameplayScreen
 
         CurrentBlock = _blockQueue.Dequeue();
         _canHold = true;
+        _elapsed = TimeSpan.Zero;
     }
 }

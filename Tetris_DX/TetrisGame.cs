@@ -1,14 +1,13 @@
 ﻿namespace Tetris_DX;
 
 using Microsoft.Xna.Framework;
+using Tetris_DX.ScreenManagement;
 using Tetris_DX.Screens;
 
 public class TetrisGame : Game
 {
     private readonly GraphicsDeviceManager _graphics;
-
-    // NOTE(PERE): Temporary, this will eventually go inside the ScreenManager class.
-    private readonly GameplayScreen _gameplayScreen;
+    private readonly ScreenManager _screenManager;
 
     public TetrisGame()
     {
@@ -25,7 +24,15 @@ public class TetrisGame : Game
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
-        _gameplayScreen = new GameplayScreen(_graphics, GraphicsDevice);
+        // Create the screen manager component.
+        _screenManager = new ScreenManager(this);
+        Components.Add(_screenManager);
+
+        // Activate the first screens.
+        _screenManager.AddScreen(new GameplayScreen(_graphics,
+                                                    GraphicsDevice,
+                                                    Content),
+                                 null);
     }
 
     protected override void Initialize()
@@ -33,24 +40,11 @@ public class TetrisGame : Game
         base.Initialize();
     }
 
-    protected override void LoadContent()
-    {
-        _gameplayScreen.LoadContent(GraphicsDevice, Content);
-    }
-
-    protected override void Update(GameTime gameTime)
-    {
-        _gameplayScreen.Update(gameTime);
-
-        base.Update(gameTime);
-    }
-
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.Black);
 
-        _gameplayScreen.Draw();
-
+        // The real drawing happens inside the screen manager component.
         base.Draw(gameTime);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Tetris_DX;
+﻿namespace Tetris_DX.ScreenManagement;
 
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
