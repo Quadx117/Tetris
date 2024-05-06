@@ -42,8 +42,9 @@ public class ScreenManager : DrawableGameComponent
     public bool TraceEnabled { get; set; }
 
     /// <summary>
-    /// Constructs a new screen manager component.
+    /// Initializes a new instance of the screen manager component.
     /// </summary>
+    /// <param name="game">The <see cref="Game"/> class who owns this screen manager.</param>
     public ScreenManager(Game game)
         : base(game)
     {
@@ -184,6 +185,9 @@ public class ScreenManager : DrawableGameComponent
     /// <summary>
     /// Adds a new screen to the screen manager.
     /// </summary>
+    /// <param name="screen">The screen instance to add.</param>
+    /// <param name="controllingPlayer">The player for which the screen should
+    /// accept input or <c>null</c> to accept input from any player.</param>
     public void AddScreen(GameScreen screen, PlayerIndex? controllingPlayer)
     {
         screen.ControllingPlayer = controllingPlayer;
@@ -200,11 +204,12 @@ public class ScreenManager : DrawableGameComponent
     }
 
     /// <summary>
-    /// Removes a screen from the screen manager. You should normally
-    /// use GameScreen.ExitScreen instead of calling this directly, so
-    /// the screen can gradually transition off rather than just being
+    /// Removes a screen from the screen manager. You should normally use
+    /// <see cref="GameScreen.ExitScreen"/> instead of calling this directly,
+    /// so the screen can gradually transition off rather than just being
     /// instantly removed.
     /// </summary>
+    /// <param name="screen">The screen instance to be removed.</param>
     public void RemoveScreen(GameScreen screen)
     {
         // If we have a graphics device, tell the screen to unload content.
@@ -218,7 +223,7 @@ public class ScreenManager : DrawableGameComponent
     }
 
     /// <summary>
-    /// Expose an array holding all the screens. We return a copy rather
+    /// Exposes an array holding all the screens. We return a copy rather
     /// than the real master list, because screens should only ever be added
     /// or removed using the AddScreen and RemoveScreen methods.
     /// </summary>
@@ -228,10 +233,16 @@ public class ScreenManager : DrawableGameComponent
     }
 
     /// <summary>
-    /// Helper draws a translucent black fullscreen sprite, used for fading
-    /// screens in and out, and for darkening the background behind popups.
+    /// Draws a translucent black fullscreen sprite, used for fading screens
+    /// in and out, and for darkening the background behind popups.
     /// </summary>
-    public void FadeBackBufferToBlack(float alpha)
+    /// <remarks>
+    /// This method needs to be called outside of any <see cref="SpriteBatch.Begin"/>
+    /// and <see cref="SpriteBatch.End"/> calls, since it has its own.
+    /// </remarks>
+    /// <param name="opacity">A value from 0 to 1 which represents the percentage
+    /// of opacity of the black sprite. 1 is fully opaque, 0 is fully transparent.</param>
+    public void FadeBackBufferToBlack(float opacity)
     {
         Viewport viewport = GraphicsDevice.Viewport;
 
@@ -239,7 +250,7 @@ public class ScreenManager : DrawableGameComponent
 
         SpriteBatch.Draw(_blankTexture,
                          new Rectangle(0, 0, viewport.Width, viewport.Height),
-                         Color.Black * alpha);
+                         Color.Black * opacity);
 
         SpriteBatch.End();
     }

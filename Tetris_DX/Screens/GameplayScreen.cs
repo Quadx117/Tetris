@@ -19,7 +19,6 @@ public class GameplayScreen : GameScreen
     private readonly ContentManager _content;
 
     private bool _gameOver;
-    private bool _isPaused;
     private bool _hardDrop;
     private bool _hold;
     private bool _autoRepeatMovement;
@@ -245,6 +244,13 @@ public class GameplayScreen : GameScreen
         // TODO(PERE): Should we unload the game's content here?
     }
 
+    // TODO(PERE): This method is called after the Update() method, which
+    // seems weird since we it means we always have one update of lag between
+    // pressing a button and handling it. We should investigate if we can
+    // change that behavior in the ScreenManager class. Another option would
+    // be to pass GameTime to HandleInput so we can do things that require it
+    // or store the gameTime from Update. In that case, we would need to move
+    // most of the game logic from Update to HandleInput, which seems odd.
     public override void HandleInput(InputManager input)
     {
         GamePadState gamePadState = input.CurrentGamePadState;
@@ -259,10 +265,8 @@ public class GameplayScreen : GameScreen
         if (!_gameOver &&
             (input.IsPauseGame() || gamePadDisconnected))
         {
-            _isPaused = !_isPaused;
-            // TODO(PERE): This is temporary and makes sure we stay paused if 
-            // the gampepad disconnected
-            _isPaused |= gamePadDisconnected;
+            ScreenManager.AddScreen(new PauseMenuScreen(_graphics),
+                                    ControllingPlayer);
         }
         else
         {
@@ -297,9 +301,7 @@ public class GameplayScreen : GameScreen
                     _elapsed = TimeSpan.Zero;
                 }
             }
-            // TODO(PERE): Temporary if since once we have a proper pause screen,
-            // we won't be handling input in this screen when the game is paused.
-            else if (!_isPaused)
+            else
             {
                 // NOTE(PERE): Pressing both left and right at the same time is
                 // only possible when using a keyboard and getting the timing
@@ -356,147 +358,144 @@ public class GameplayScreen : GameScreen
                                 bool otherScreenHasFocus,
                                 bool coveredByOtherScreen)
     {
-        base.Update(gameTime, otherScreenHasFocus, coveredByOtherScreen);
+        // NOTE(PERE): We pass false for the third parameter because we don't
+        // want the screen to transition off while the pause screen is up.
+        base.Update(gameTime, otherScreenHasFocus, false);
 
-        // TODO(PERE): Validate if this is needed and OK to return.
         if (!IsActive)
         {
             // NOTE(PERE): We don't need to update this screen if it is not active.
             return;
         }
 
-        // TODO(PERE): Do we need this VS !IsActive above.
-        if (!_isPaused)
+        if (_autoRepeatMovement)
         {
-            if (_autoRepeatMovement)
+            _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
+        }
+
+        // NOTE(PERE): If we pressed left or right, then _elapsedSinceLastAutoRepeat
+        // will be 0 so we know we want to move the Tetromino in that case. Otherwise,
+        // we wait for the appropriate amount of time before auto-repeating the move.
+        if (_elapsedSinceLastAutoRepeat == TimeSpan.Zero ||
+            _elapsedSinceLastAutoRepeat > _autoRepeatDelay)
+        {
+            if (_elapsedSinceLastAutoRepeat > _autoRepeatDelay)
             {
-                _elapsedSinceLastAutoRepeat += gameTime.ElapsedGameTime;
+                _elapsedSinceLastAutoRepeat -= _autoRepeatRate;
             }
 
-            // NOTE(PERE): If we pressed left or right, then _elapsedSinceLastAutoRepeat
-            // will be 0 so we know we want to move the Tetromino in that case. Otherwise,
-            // we wait for the appropriate amount of time before auto-repeating the move.
-            if (_elapsedSinceLastAutoRepeat == TimeSpan.Zero ||
-                _elapsedSinceLastAutoRepeat > _autoRepeatDelay)
+            // TODO(PERE): We can't set _movementDirection to None with the
+            // current logic, since we rely on knowing what was the last
+            // direction we were moving to determine if we want to auto repeat.
+            // This should be improved as it is not easy to work with.
+            switch (_movementDirection)
             {
-                if (_elapsedSinceLastAutoRepeat > _autoRepeatDelay)
-                {
-                    _elapsedSinceLastAutoRepeat -= _autoRepeatRate;
-                }
-
-                // TODO(PERE): We can't set _movementDirection to None with the
-                // current logic, since we rely on knowing what was the last
-                // direction we were moving to determine if we want to auto repeat.
-                // This should be improved as it is not easy to work with.
-                switch (_movementDirection)
-                {
-                    case MovementDirection.None:
-                        // Nothing to do.
-                        break;
-                    case MovementDirection.Left:
-                        CurrentBlock.MoveLeft();
-                        if (!BlockFits())
-                        {
-                            CurrentBlock.MoveRight();
-                        }
-                        break;
-                    case MovementDirection.Right:
-                        CurrentBlock.MoveRight();
-                        if (!BlockFits())
-                        {
-                            CurrentBlock.MoveLeft();
-                        }
-                        break;
-                }
-            }
-
-            switch (_rotationDirection)
-            {
-                case RotationDirection.None:
+                case MovementDirection.None:
                     // Nothing to do.
                     break;
-                case RotationDirection.Clockwise:
-                    CurrentBlock.RotateCW();
+                case MovementDirection.Left:
+                    CurrentBlock.MoveLeft();
                     if (!BlockFits())
                     {
-                        CurrentBlock.RotateCCW();
+                        CurrentBlock.MoveRight();
                     }
                     break;
-                case RotationDirection.CounterClockwise:
+                case MovementDirection.Right:
+                    CurrentBlock.MoveRight();
+                    if (!BlockFits())
+                    {
+                        CurrentBlock.MoveLeft();
+                    }
+                    break;
+            }
+        }
+
+        switch (_rotationDirection)
+        {
+            case RotationDirection.None:
+                // Nothing to do.
+                break;
+            case RotationDirection.Clockwise:
+                CurrentBlock.RotateCW();
+                if (!BlockFits())
+                {
                     CurrentBlock.RotateCCW();
-                    if (!BlockFits())
-                    {
-                        CurrentBlock.RotateCW();
-                    }
-                    break;
-            }
-
-            // NOTE(PERE): If the player ever manages to issue both a hold and
-            // a hard drop action, we favor the hold action over the hard drop.
-            if (_hold)
-            {
-                BlockBase tmp = _heldBlock;
-                _heldBlock = CurrentBlock;
-                CurrentBlock = tmp ?? _blockQueue.Dequeue();
-                _canHold = false;
-                _elapsed = TimeSpan.Zero;
-                _lockingDown = false;
-                _hardDrop = false;
-            }
-            else if (_hardDrop)
-            {
-                _hardDrop = false;
-
-                do
+                }
+                break;
+            case RotationDirection.CounterClockwise:
+                CurrentBlock.RotateCCW();
+                if (!BlockFits())
                 {
-                    CurrentBlock.MoveDown();
-                    _score += 2;
-                } while (BlockFits());
+                    CurrentBlock.RotateCW();
+                }
+                break;
+        }
 
-                CurrentBlock.MoveUp();
-                _score -= 2;
-                LockDownBlock();
-            }
-            else if (_lockingDown)
+        // NOTE(PERE): If the player ever manages to issue both a hold and
+        // a hard drop action, we favor the hold action over the hard drop.
+        if (_hold)
+        {
+            BlockBase tmp = _heldBlock;
+            _heldBlock = CurrentBlock;
+            CurrentBlock = tmp ?? _blockQueue.Dequeue();
+            _canHold = false;
+            _elapsed = TimeSpan.Zero;
+            _lockingDown = false;
+            _hardDrop = false;
+        }
+        else if (_hardDrop)
+        {
+            _hardDrop = false;
+
+            do
             {
-                // Try to move down one last time in case the player moved the piece sideways
                 CurrentBlock.MoveDown();
-                if (BlockFits())
-                {
-                    _lockDownDelay = TimeSpan.FromSeconds(0.5);
-                    _lockingDown = false;
-                }
-                else
-                {
-                    CurrentBlock.MoveUp();
-                    _lockDownDelay = _lockDownDelay.Subtract(gameTime.ElapsedGameTime);
-                }
+                _score += 2;
+            } while (BlockFits());
 
-                if (_lockDownDelay.TotalMilliseconds <= 0)
-                {
-                    LockDownBlock();
-                    _lockDownDelay = TimeSpan.FromSeconds(0.5);
-                    _lockingDown = false;
-                }
+            CurrentBlock.MoveUp();
+            _score -= 2;
+            LockDownBlock();
+        }
+        else if (_lockingDown)
+        {
+            // Try to move down one last time in case the player moved the piece sideways
+            CurrentBlock.MoveDown();
+            if (BlockFits())
+            {
+                _lockDownDelay = TimeSpan.FromSeconds(0.5);
+                _lockingDown = false;
             }
             else
             {
-                _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropSpeedMultiplier));
-                if (_elapsed.TotalMilliseconds > _dropInterval.TotalMilliseconds)
-                {
-                    CurrentBlock.MoveDown();
-                    if (!BlockFits())
-                    {
-                        CurrentBlock.MoveUp();
-                        _lockingDown = true;
-                    }
-                    else if (_softDropSpeedMultiplier > 1)
-                    {
-                        _score += 1;
-                    }
+                CurrentBlock.MoveUp();
+                _lockDownDelay = _lockDownDelay.Subtract(gameTime.ElapsedGameTime);
+            }
 
-                    _elapsed = _elapsed.Subtract(_dropInterval);
+            if (_lockDownDelay.TotalMilliseconds <= 0)
+            {
+                LockDownBlock();
+                _lockDownDelay = TimeSpan.FromSeconds(0.5);
+                _lockingDown = false;
+            }
+        }
+        else
+        {
+            _elapsed = _elapsed.Add(gameTime.ElapsedGameTime.Multiply(_softDropSpeedMultiplier));
+            if (_elapsed.TotalMilliseconds > _dropInterval.TotalMilliseconds)
+            {
+                CurrentBlock.MoveDown();
+                if (!BlockFits())
+                {
+                    CurrentBlock.MoveUp();
+                    _lockingDown = true;
                 }
+                else if (_softDropSpeedMultiplier > 1)
+                {
+                    _score += 1;
+                }
+
+                _elapsed = _elapsed.Subtract(_dropInterval);
             }
         }
     }
@@ -516,20 +515,7 @@ public class GameplayScreen : GameScreen
         DrawMatrix(spriteBatch);
         DrawInfoPanel(spriteBatch);
 
-        if (_isPaused)
-        {
-            // TODO(PERE): Calculate center by measuring the string
-            // TODO(PERE): Use a bigger font for the "PAUSED" text
-            // TODO(PERE): The todo's above aren't done since this is
-            // temporary and should be replaced by a proper popup screen
-            // with buttons to continue or quit.
-            spriteBatch.DrawString(_fontTitle,
-                                   "PAUSED",
-                                   new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 37,
-                                               (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
-                                   Color.White);
-        }
-        else if (_gameOver)
+        if (_gameOver)
         {
             spriteBatch.Draw(_pixel,
                              new Rectangle(0,
@@ -802,7 +788,7 @@ public class GameplayScreen : GameScreen
             // Perfect clear bonus
             if (_gameMatrix.IsEmpty())
             {
-                // TODO(PERE): It seems odd that the triple-line is worht a bit more
+                // TODO(PERE): It seems odd that the triple-line is worth a bit more
                 // compared to the others, but this is what I found so far on the Tetris
                 // wiki. Should do more research to confirm this without a doubt.
                 int tmpPerfectBonus = (400 * (cleared + 1)) +

@@ -35,15 +35,33 @@
 [ ] Count down from 3 when starting game or resume from pause
 [ ] Handle resizing the screen
 [ ] Handle toggling full screen
+[ ] Splash screen
+    [ ] Show Tetris logo
+    [ ] Show copyright info
 [ ] Title screen
-    [ ] Select starting level (still increase every 10 lines cleared)
-[ ] Pause screen
+    [ ] Play button
+    [ ] Select starting level button
+        Still increase every 10 lines cleared, but need to clear the amount of
+        lines that would have been needed to get to the starting level.
+        Ex: If we start at level 5 we need to clear 50 lines to get to level 6
+        (i.e. the 40 lines needed to get to level 5 plus 10 lines)
+    [ ] High scores
+    [ ] Options
+    [ ] How to play
+[*] Pause screen
+    [ ] Resume button
+    [ ] Options button
+    [ ] How to play button
+    [ ] Quit button
+    [ ] Hide : Held piece, Next pieces, ghost and pieces on the grid
 [ ] Game Over screen
     [ ] Show stats
         [ ] Number of single lines, number of Tetris, t-spins, etc.
         [ ] Number of each pieces used
     [ ] Show info (score, number of lines and current level)
     [ ] Top scores
+    [ ] Quit to main menu
+    [ ] Play again
 [ ] Options screen
     [ ] Enable/Disable the grid
     [ ] Enable/Disable the ghost Tetromino at the bottom of the screen
@@ -128,7 +146,7 @@
         move down.
 [*] Input Manager
     [ ] Add controller support
-    [ ] Create different managers based on context
+    [ ] Create different managers based on context ?
         For example, the TetrisInputManager would be responsible for gameplay and would contain
         actions such as HardDrop, SoftDrop, etc. while the MenuInputController would be used
         when inside a menu and would contain actions such as MenuUp, MenuDown, MenuBack, etc.
