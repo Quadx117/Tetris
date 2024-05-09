@@ -54,7 +54,7 @@
     [ ] How to play button
     [ ] Quit button
     [ ] Hide : Held piece, Next pieces, ghost and pieces on the grid
-[ ] Game Over screen
+[*] Game Over screen
     [ ] Show stats
         [ ] Number of single lines, number of Tetris, t-spins, etc.
         [ ] Number of each pieces used

@@ -18,7 +18,7 @@ public class GameplayScreen : GameScreen
     private readonly GraphicsDevice _graphicsDevice;
     private readonly ContentManager _content;
 
-    private bool _gameOver;
+    private bool _isPaused;
     private bool _hardDrop;
     private bool _hold;
     private bool _autoRepeatMovement;
@@ -142,7 +142,11 @@ public class GameplayScreen : GameScreen
             }
             else
             {
-                _gameOver = true;
+                GameOverScreen gameOverScreen = new(_graphics);
+                gameOverScreen.Restart += RestartGame;
+
+                ScreenManager.AddScreen(gameOverScreen,
+                                        ControllingPlayer);
             }
         }
     }
@@ -244,6 +248,24 @@ public class GameplayScreen : GameScreen
         // TODO(PERE): Should we unload the game's content here?
     }
 
+    private void RestartGame(object sender, EventArgs e)
+    {
+        _gameMatrix.Reset();
+        _blockQueue.Reset();
+        _heldBlock = null;
+        CurrentBlock = _blockQueue.Dequeue();
+        _score = 0;
+        _lines = 0;
+        _level = 1;
+        _comboCount = -1;
+        _dropInterval = TimeSpan.FromSeconds(1);
+
+        // NOTE(PERE): Locking down the final block already resset
+        // these 2 fields, but there is no harm in doing it again.
+        _canHold = true;
+        _elapsed = TimeSpan.Zero;
+    }
+
     // TODO(PERE): This method is called after the Update() method, which
     // seems weird since we it means we always have one update of lag between
     // pressing a button and handling it. We should investigate if we can
@@ -262,9 +284,10 @@ public class GameplayScreen : GameScreen
         bool gamePadDisconnected = !gamePadState.IsConnected &&
                                    input.GamePadWasConnected;
 
-        if (!_gameOver &&
-            (input.IsPauseGame() || gamePadDisconnected))
+        if (input.IsPauseGame() ||
+                 gamePadDisconnected)
         {
+            _isPaused = true;
             ScreenManager.AddScreen(new PauseMenuScreen(_graphics),
                                     ControllingPlayer);
         }
@@ -278,79 +301,55 @@ public class GameplayScreen : GameScreen
             //    Exit();
             //}
 
-            // TODO(PERE): Temporary code that will go inside the GameOver screen
-            if (_gameOver)
+            _isPaused = false;
+
+            // NOTE(PERE): Pressing both left and right at the same time is
+            // only possible when using a keyboard and getting the timing
+            // right so that it happens inside the same update is almost
+            // impossible. If it were to happen, we choose to prioritize
+            // going left.
+            if (input.IsKeyTransitionDown(Keys.Left) ||
+                (input.IsKeyHeld(Keys.Left) &&
+                 input.IsKeyTransitionUp(Keys.Right)))
             {
-                if (input.IsKeyTransitionDown(Keys.Space) ||
-                    input.IsKeyTransitionDown(Keys.Enter))
-                {
-                    _gameMatrix.Reset();
-                    _blockQueue.Reset();
-                    _heldBlock = null;
-                    CurrentBlock = _blockQueue.Dequeue();
-                    _score = 0;
-                    _lines = 0;
-                    _level = 1;
-                    _comboCount = -1;
-                    _dropInterval = TimeSpan.FromSeconds(1);
-                    _gameOver = false;
-
-                    // NOTE(PERE): Locking down the final block already resset
-                    // these 2 fields, but there is no harm in doing it again.
-                    _canHold = true;
-                    _elapsed = TimeSpan.Zero;
-                }
+                _movementDirection = MovementDirection.Left;
+                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
             }
-            else
+            else if (input.IsKeyTransitionDown(Keys.Right) ||
+                     (input.IsKeyHeld(Keys.Right) &&
+                      input.IsKeyTransitionUp(Keys.Left)))
             {
-                // NOTE(PERE): Pressing both left and right at the same time is
-                // only possible when using a keyboard and getting the timing
-                // right so that it happens inside the same update is almost
-                // impossible. If it were to happen, we choose to prioritize
-                // going left.
-                if (input.IsKeyTransitionDown(Keys.Left) ||
-                    (input.IsKeyHeld(Keys.Left) &&
-                     input.IsKeyTransitionUp(Keys.Right)))
-                {
-                    _movementDirection = MovementDirection.Left;
-                    _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-                }
-                else if (input.IsKeyTransitionDown(Keys.Right) ||
-                         (input.IsKeyHeld(Keys.Right) &&
-                          input.IsKeyTransitionUp(Keys.Left)))
-                {
-                    _movementDirection = MovementDirection.Right;
-                    _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
-                }
-
-                _autoRepeatMovement = (_movementDirection == MovementDirection.Left &&
-                                       input.IsKeyHeld(Keys.Left)) ||
-                                      (_movementDirection == MovementDirection.Right &&
-                                       input.IsKeyHeld(Keys.Right));
-
-                _rotationDirection = input.IsKeyTransitionDown(Keys.Up)
-                                         ? RotationDirection.Clockwise
-                                         : input.IsKeyTransitionDown(Keys.Z)
-                                             ? RotationDirection.CounterClockwise
-                                             : RotationDirection.None;
-
-                if (input.IsKeyTransitionDown(Keys.Down))
-                {
-                    _softDropSpeedMultiplier = 20;
-                }
-                else if (input.IsKeyTransitionUp(Keys.Down))
-                {
-                    _softDropSpeedMultiplier = 1;
-                }
-
-                _hardDrop = input.IsKeyTransitionDown(Keys.Space);
-
-                // TODO(PERE): Add debug info to see timings like elapsed
-                // time since last drop, etc. It seems a bit long before
-                // the piece goes down by one row after holding a piece.
-                _hold = input.IsKeyTransitionDown(Keys.C) &&
-                        _canHold;
+                _movementDirection = MovementDirection.Right;
+                _elapsedSinceLastAutoRepeat = TimeSpan.Zero;
             }
+
+            _autoRepeatMovement = (_movementDirection == MovementDirection.Left &&
+                                   input.IsKeyHeld(Keys.Left)) ||
+                                  (_movementDirection == MovementDirection.Right &&
+                                   input.IsKeyHeld(Keys.Right));
+
+            _rotationDirection = input.IsKeyTransitionDown(Keys.Up)
+                                     ? RotationDirection.Clockwise
+                                     : input.IsKeyTransitionDown(Keys.Z)
+                                         ? RotationDirection.CounterClockwise
+                                         : RotationDirection.None;
+
+            if (input.IsKeyTransitionDown(Keys.Down))
+            {
+                _softDropSpeedMultiplier = 20;
+            }
+            else if (input.IsKeyTransitionUp(Keys.Down))
+            {
+                _softDropSpeedMultiplier = 1;
+            }
+
+            _hardDrop = input.IsKeyTransitionDown(Keys.Space);
+
+            // TODO(PERE): Add debug info to see timings like elapsed
+            // time since last drop, etc. It seems a bit long before
+            // the piece goes down by one row after holding a piece.
+            _hold = input.IsKeyTransitionDown(Keys.C) &&
+                    _canHold;
         }
     }
 
@@ -515,27 +514,7 @@ public class GameplayScreen : GameScreen
         DrawMatrix(spriteBatch);
         DrawInfoPanel(spriteBatch);
 
-        if (_gameOver)
-        {
-            spriteBatch.Draw(_pixel,
-                             new Rectangle(0,
-                                           0,
-                                           _graphics.PreferredBackBufferWidth,
-                                           _graphics.PreferredBackBufferHeight),
-                             Color.Black * 0.6f);
-
-            // TODO(PERE): Calculate center by measuring the string
-            // TODO(PERE): Use a bigger font for the "GAME OVER" text
-            // TODO(PERE): The todo's above aren't done since this is
-            // temporary and should be replaced by a proper popup screen
-            // with stats and buttons to restart or quit.
-            spriteBatch.DrawString(_fontTitle,
-                                   "GAME OVER",
-                                   new Vector2((_graphics.PreferredBackBufferWidth * 0.5f) - 50,
-                                               (_graphics.PreferredBackBufferHeight * 0.5f) - 10),
-                                   Color.White);
-        }
-        else
+        if (!_isPaused)
         {
             DrawNextTetromino(spriteBatch);
             DrawHeldTetromino(spriteBatch);
