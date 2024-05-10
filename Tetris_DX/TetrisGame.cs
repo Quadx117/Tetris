@@ -33,6 +33,8 @@ public class TetrisGame : Game
                                                     GraphicsDevice,
                                                     Content),
                                  null);
+        _screenManager.AddScreen(new CountDownScreen(_graphics),
+                                 null);
     }
 
     protected override void Initialize()

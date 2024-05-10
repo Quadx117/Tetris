@@ -177,6 +177,11 @@ public class GameplayScreen : GameScreen
                                     (_graphics.PreferredBackBufferHeight - playingAreaHeight) / 2);
         _matrixOrigin = _matrixVisibleOrigin - new Vector2(0, 2 * _cellSize.Y);
         _playingAreaOrigin = _matrixVisibleOrigin - Vector2.One;
+
+        // NOTE(PERE): We start paused since we want to show the countdown before
+        // actually starting the game. Once this screen becomes the top-most scrren,
+        // we will unpause and let the game run normally.
+        _isPaused = true;
     }
 
     public override void LoadContent()
@@ -264,6 +269,11 @@ public class GameplayScreen : GameScreen
         // these 2 fields, but there is no harm in doing it again.
         _canHold = true;
         _elapsed = TimeSpan.Zero;
+
+        // NOTE(PERE): We start the new game in the paused state, much like in
+        // the constructor, since we want to show the countdown before actually
+        // starting the game.
+        _isPaused = true;
     }
 
     // TODO(PERE): This method is called after the Update() method, which

@@ -15,7 +15,6 @@ internal class PauseMenuScreen : GameScreen
         _graphics = graphics;
 
         TransitionOnTime = TimeSpan.FromSeconds(0.5);
-        TransitionOffTime = TimeSpan.FromSeconds(0.5);
     }
 
     public override void HandleInput(InputManager input)
@@ -23,6 +22,9 @@ internal class PauseMenuScreen : GameScreen
         if (input.IsMenuCancel() ||
             input.IsPauseGame())
         {
+            ScreenManager.AddScreen(new CountDownScreen(_graphics),
+                                    ControllingPlayer);
+
             ExitScreen();
         }
     }

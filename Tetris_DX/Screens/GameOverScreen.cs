@@ -16,7 +16,6 @@ internal class GameOverScreen : GameScreen
         _graphics = graphics;
 
         TransitionOnTime = TimeSpan.FromSeconds(0.5);
-        TransitionOffTime = TimeSpan.FromSeconds(0.5);
     }
 
     public override void HandleInput(InputManager input)
@@ -24,6 +23,9 @@ internal class GameOverScreen : GameScreen
         if (input.IsMenuCancel() ||
             input.IsMenuSelect())
         {
+            ScreenManager.AddScreen(new CountDownScreen(_graphics),
+                                    ControllingPlayer);
+
             Restart?.Invoke(this, null);
 
             ExitScreen();

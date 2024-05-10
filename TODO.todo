@@ -32,7 +32,7 @@
 }
 
 == UI == {
-[ ] Count down from 3 when starting game or resume from pause
+[x] Count down from 3 when starting game or resume from pause
 [ ] Handle resizing the screen
 [ ] Handle toggling full screen
 [ ] Splash screen
